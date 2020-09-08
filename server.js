@@ -18,9 +18,9 @@ botInit(app);
 app.use(express.static("public"));
 
 // https://expressjs.com/en/starter/basic-routing.html
-app.get("/", (request, response) => {
-  response.sendFile(__dirname + "/views/index.html");
-});
+// app.get("/", (request, response) => {
+//   response.sendFile(__dirname + "/views/index.html");
+// });
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

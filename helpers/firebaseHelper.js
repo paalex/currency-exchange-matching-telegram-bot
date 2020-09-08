@@ -8,7 +8,6 @@ dotenv_config()
 const parsedServiceAccount = process.env.FIREBASE_CONFIG_JSON
   ? JSON.parse(process.env.FIREBASE_CONFIG_JSON)
   : require("../.data/fb-service-account.json");
-console.log('process.env.FIREBASE_DB_URL',process.env.FIREBASE_DB_URL)
 admin.initializeApp({
   credential: admin.credential.cert(parsedServiceAccount),
   databaseURL: process.env.FIREBASE_DB_URL

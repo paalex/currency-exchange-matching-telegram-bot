@@ -13,9 +13,8 @@ import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
 import {destructTransType} from "./currencyHelper"
 
-const {TELEGRAM_API_KEY} = process.env;
+const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
 const bot = new Telegraf(TELEGRAM_API_KEY);
-const {SERVER_URL} = process.env;
 
 function getCityWord(city) {
   let word;
