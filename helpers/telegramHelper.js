@@ -162,7 +162,7 @@ const offerWizard = new WizardScene(
     const currency = action === SELL ? currencySource : currencyDestination;
 
     ctx.reply(
-      `Понятно. ${ctx.wizard.state.rate} ${currency}-${BYN}.\n` 
+      `Понятно. ${ctx.wizard.state.rate} ${currency}-${BYN}.\n`
       + `В каком городе вы можете встретится?`,
       citiesButtons
     );
@@ -188,7 +188,7 @@ const offerWizard = new WizardScene(
       const partnerWord = action === SELL ? 'покупателя' : 'продавца';
       const actionWord = action === SELL ? 'продать' : 'купить';
       ctx.reply(
-        `Итак, вы готовы ${actionWord}:\n` 
+        `Итак, вы готовы ${actionWord}:\n`
         + `${amount} ${currency} по курсу ${rate} ${currency}-${BYN} в городе ${cityWord}.\n\n`
         + `Как только найду вам ${partnerWord}, сообщу 🐰`,
         Markup.inlineKeyboard([
@@ -203,7 +203,8 @@ const offerWizard = new WizardScene(
 const stage = new Stage([offerWizard]);
 
 function saveUser(ctx) {
-  const user = ctx.update.message.from;
+  console.log('saveUser ctx.update', ctx.update)
+  const user = _.get(ctx, 'update.message.from');
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot) {
     storeUser(processedUser);
