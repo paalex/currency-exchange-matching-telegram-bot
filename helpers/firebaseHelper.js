@@ -10,11 +10,7 @@ admin.initializeApp({
 var db = admin.database().ref('server');
 
 var usersRef = db.child("users");
-var offersRef = db.child("offers");
-
-// usersRef.once('value').then(snapshot => {
-//   console.log(snapshot.val());
-// })
+// var offersRef = db.child("offers");
 
 // usersRef.set({paalex: {name: 'Alex', telegramId: '@paalex505'}}, function(error) {
 //   if (error) {

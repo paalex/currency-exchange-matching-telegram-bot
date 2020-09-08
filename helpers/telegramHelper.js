@@ -116,8 +116,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      ctx.scene.reenter()
-      return
+      return ctx.wizard.selectStep(0)
     }
     const choice = ctx.update.callback_query.data;
     if (choice) {
@@ -140,7 +139,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      return ctx.scene.reenter()
+      return ctx.wizard.selectStep(0)
     }
     ctx.wizard.state.amount = ctx.message.text;
     const {amount, currencySource, currencyDestination, action} = ctx.wizard.state;
@@ -152,8 +151,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      ctx.scene.reenter()
-      return
+      return ctx.wizard.selectStep(0)
     }
     ctx.wizard.state.rate = ctx.message.text;
     const {amount, currencySource, currencyDestination, action} = ctx.wizard.state;
@@ -168,8 +166,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      ctx.scene.reenter()
-      return
+      return ctx.wizard.selectStep(0)
     }
     ctx.wizard.state.city = ctx.update.callback_query.data;
     const {currencySource, currencyDestination, rate, amount, action, transactionType, city} = ctx.wizard.state;
@@ -194,7 +191,7 @@ const offerWizard = new WizardScene(
       );
       return ctx.scene.leave();
     }
-    return ctx.scene.reenter()
+    return ctx.wizard.selectStep(0)
   }
 );
 const stage = new Stage([offerWizard]);
@@ -208,7 +205,7 @@ function saveUser(ctx) {
 }
 
 export function botInit(expressApp) {
-  bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`);
+  bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
   expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
   // Scene registration
   bot.use((new LocalSession({ database: '.data/telegraf_db.json' })).middleware())
@@ -218,8 +215,10 @@ export function botInit(expressApp) {
     saveUser(ctx);
     ctx.scene.enter("offer");
   });
-  bot.action("back", ctx => {
-    ctx.scene.reenter();
+  bot.action("back", async ctx => {
+    await ctx.scene.reenter().catch(e => {
+      ctx.scene.enter("offer");
+    });
   });
 
 //   bot.on("callback_query", ctx => {
