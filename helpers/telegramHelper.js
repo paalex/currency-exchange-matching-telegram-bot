@@ -123,7 +123,7 @@ const offerWizard = new WizardScene(
       return ctx.scene.reenter()
     } else if (choice === LIST_POTENTIAL_MATCHES) {
       const matches = listPotentialMatches(getUser(ctx));
-      const matchesText = readableOffers(matches, getUser(ctx).city)
+      const matchesText = matches && matches.length > 0 ? readableOffers(matches, getUser(ctx).city) : 'Для вас пока нет подходящих сделок 💰❌'
       ctx.reply(matchesText || '');
     } else if (choice) {
       const {currency, action} = destructTransType(choice)
