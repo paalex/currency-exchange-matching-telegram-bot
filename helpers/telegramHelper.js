@@ -114,7 +114,6 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   ctx => {
-    console.log('ctx.update',ctx.update)
     if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
       ctx.scene.reenter()
       return
@@ -139,7 +138,6 @@ const offerWizard = new WizardScene(
     }
   },
   ctx => {
-    console.log('ctx.update',ctx.update)
     if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
       return ctx.scene.reenter()
     }
@@ -152,7 +150,6 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   ctx => {
-    console.log('ctx.update',ctx.update)
     if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
       ctx.scene.reenter()
       return
@@ -169,7 +166,6 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   ctx => {
-    console.log('ctx.update',ctx.update)
     if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
       ctx.scene.reenter()
       return
