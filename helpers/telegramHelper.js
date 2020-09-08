@@ -199,7 +199,6 @@ const offerWizard = new WizardScene(
 const stage = new Stage([offerWizard]);
 
 function saveUser(ctx) {
-  // console.log('saveUser ctx.update', ctx.update)
   const user = _.get(ctx, 'update.message.from') ||  _.get(ctx, 'update.callback_query.from') ;
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
@@ -217,7 +216,7 @@ export function botInit() {
     ctx.scene.enter("offer");
   });
   bot.action("back", ctx => {
-    ctx.scene.enter("offer");
+    ctx.scene.reenter();
   });
 
 //   bot.on("callback_query", ctx => {
