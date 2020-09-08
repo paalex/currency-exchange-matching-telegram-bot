@@ -54,6 +54,10 @@ function getActionPhrase(action) {
   return word;
 }
 
+function isTransactionType(p) {
+  return p === BUY_USD || p === BUY_EUR || p === SELL_USD || p === SELL_EUR
+}
+
 function processTelegramUser(user) {
   return {
     id: user.id,
@@ -99,8 +103,8 @@ const getUser = (ctx) => {
  return _.get(ctx.update, 'callback_query.from') || _.get(ctx.update, 'message.from');
 }
 
-const offerWizard = new WizardScene(
-  "offer",
+const welcomeWizard = new WizardScene(
+  "welcome",
   ctx => {
     // console.log('ctx',ctx)
     saveUser(ctx);
@@ -108,9 +112,6 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   async ctx => {
-    if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
-      return ctx.scene.reenter()
-    }
     const choice = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
     if (choice === LIST_OFFERS) {
@@ -122,11 +123,41 @@ const offerWizard = new WizardScene(
       }
       return ctx.scene.reenter()
     } else if (choice === LIST_POTENTIAL_MATCHES) {
-      const matches = await listPotentialMatches(getUser(ctx));
-      const matchesText = matches && matches.length > 0 ? readableOffers(matches, getUser(ctx).city) : 'Для вас пока нет подходящих сделок 💰❌'
+      await ctx.scene.enter('matching')
+    } else if (isTransactionType(choice)) {
+      await ctx.scene.enter('offer')
+    }
+  })
+
+const matchingWizard = new WizardScene(
+  "matching",
+  async ctx => {
+    const matches = await listPotentialMatches(getUser(ctx));
+    const hasMatches = matches && matches.length > 0;
+    const matchesText = readableOffers(matches, getUser(ctx).city);
+    if (hasMatches) {
       await ctx.reply(matchesText || '');
-      return ctx.scene.reenter()
-    } else if (choice) {
+    } else {
+      await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
+      return ctx.scene.enter('welcome')
+    }
+    return ctx.wizard.next()
+  },
+  async ctx => {
+    const choice = _.get(ctx.update, 'callback_query.data');
+    console.log(choice)
+    return ctx.scene.enter('welcome')
+  })
+
+const offerWizard = new WizardScene(
+  "offer",
+  async ctx => {
+    if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
+      await ctx.scene.enter('welcome')
+      return
+    }
+    const choice = _.get(ctx.update, 'callback_query.data');
+    if (choice) {
       const {currency, action} = destructTransType(choice)
       ctx.wizard.state.currency = currency;
       ctx.wizard.state.action = action;
@@ -141,9 +172,10 @@ const offerWizard = new WizardScene(
       }
     }
   },
-  ctx => {
+  async ctx => {
     if (ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
-      return ctx.scene.reenter()
+      await ctx.scene.enter('welcome')
+      return
     }
     ctx.wizard.state.amount = ctx.message.text;
     const {amount, currency} = ctx.wizard.state;
@@ -152,9 +184,10 @@ const offerWizard = new WizardScene(
     );
     return ctx.wizard.next();
   },
-  ctx => {
+  async ctx => {
     if (ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
-      return ctx.scene.reenter()
+      await ctx.scene.enter('welcome')
+      return
     }
     ctx.wizard.state.rate = ctx.message.text;
     const {currency} = ctx.wizard.state;
@@ -165,9 +198,10 @@ const offerWizard = new WizardScene(
     );
     return ctx.wizard.next();
   },
-  ctx => {
+  async ctx => {
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
-      return ctx.scene.reenter()
+      await ctx.scene.enter('welcome')
+      return
     }
     ctx.wizard.state.city = ctx.update.callback_query.data;
     const {currency, rate, amount, action, city} = ctx.wizard.state;
@@ -193,7 +227,7 @@ const offerWizard = new WizardScene(
     return ctx.scene.reenter()
   }
 );
-const stage = new Stage([offerWizard]);
+const stage = new Stage([offerWizard, matchingWizard, welcomeWizard]);
 
 function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
@@ -212,7 +246,7 @@ export function botInit(expressApp) {
   bot.use(stage.middleware());
   bot.start(async ctx => {
     saveUser(ctx);
-    ctx.scene.enter("offer");
+    ctx.scene.enter("welcome");
   });
   bot.action("back", async ctx => {
     await ctx.scene.reenter().catch(e => {
