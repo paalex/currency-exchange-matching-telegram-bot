@@ -106,6 +106,9 @@ const citiesButtons = Markup.inlineKeyboard([
   ]
 ]).extra();
 
+const getText = (ctx) => _.get(ctx, 'update.message.text')
+
+
 const offerWizard = new WizardScene(
   "offer",
   ctx => {
@@ -115,7 +118,7 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   ctx => {
-    if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
+    if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.reenter()
     }
     const choice = ctx.update.callback_query.data;
@@ -138,7 +141,7 @@ const offerWizard = new WizardScene(
     }
   },
   ctx => {
-    if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
+    if (ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.reenter()
     }
     ctx.wizard.state.amount = ctx.message.text;
@@ -150,7 +153,7 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   ctx => {
-    if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
+    if (ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.reenter()
     }
     ctx.wizard.state.rate = ctx.message.text;
@@ -165,7 +168,7 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   ctx => {
-    if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
+    if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.reenter()
     }
     ctx.wizard.state.city = ctx.update.callback_query.data;
