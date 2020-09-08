@@ -40,7 +40,7 @@ export async function storeUser(user) {
   console.log(snapshot.val());
   return new Promise((res, rej) => {
     if (!snapshot.val()) {
-      userRef.set(user, function(error) {
+      return userRef.set(user, function(error) {
         if (error) {
           console.log("User could not be saved." + error);
           rej(error)
@@ -49,7 +49,7 @@ export async function storeUser(user) {
         }
       });
     } else {
-      userRef.update({...user}, function(error) {
+      return userRef.update({...user}, function(error) {
         if (error) {
           console.log("User could not be saved." + error);
           rej(error)
@@ -58,7 +58,6 @@ export async function storeUser(user) {
         }
       });
     }
-
   })
 }
 
@@ -84,6 +83,12 @@ export async function storeOffer(user, offer) {
       }
     });
   })
+}
+
+export async function updateCity({city, userId}) {
+  if (!userId || !city) throw new Error('no user or city in updateCity');
+  const userRef = usersRef.child(userId);
+  return userRef.update({city});
 }
 
 const parseUserOffers = (offers) => {

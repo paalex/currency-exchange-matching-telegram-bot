@@ -2,57 +2,20 @@ import Telegraf from "telegraf";
 import Markup from "telegraf/markup";
 import Stage from "telegraf/stage";
 import WizardScene from "telegraf/scenes/wizard";
-import {storeUser, storeOffer, listMyOffers, listPotentialMatches} from "./firebaseHelper";
+import {storeUser, storeOffer, listMyOffers, listPotentialMatches, updateCity} from "./firebaseHelper";
 import LocalSession from "telegraf-session-local";
 import _ from 'lodash';
 import {
   BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR,
-  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES
+  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY
 } from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
 import {destructTransType} from "./currencyHelper"
+import {getCityWord, getActionPhrase} from "./textHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
 const bot = new Telegraf(TELEGRAM_API_KEY);
-
-function getCityWord(city) {
-  let word;
-  switch (city) {
-    case MINSK:
-      word = MINSK_WORD;
-      break;
-    case GRODNO:
-      word = GRODNO_WORD;
-      break;
-    case BOBRUYSK:
-      word = BOBRUYSK_WORD;
-      break;
-    case BARANOVICHI:
-      word = BARANOVICHI_WORD;
-      break;
-  }
-  return word;
-}
-
-function getActionPhrase(action) {
-  let word;
-  switch (action) {
-    case BUY_USD:
-      word = BUY_USD_WORD;
-      break;
-    case BUY_EUR:
-      word = BUY_EUR_WORD;
-      break;
-    case SELL_USD:
-      word = SELL_USD_WORD;
-      break;
-    case SELL_EUR:
-      word = SELL_EUR_WORD;
-      break;
-  }
-  return word;
-}
 
 function isTransactionType(p) {
   return p === BUY_USD || p === BUY_EUR || p === SELL_USD || p === SELL_EUR
@@ -69,7 +32,22 @@ function processTelegramUser(user) {
   };
 }
 
-const initialMenu = Markup.inlineKeyboard([
+const generateMainMenu = (city) => Markup.inlineKeyboard([
+  [
+    Markup.callbackButton(`Зарегестрировать новый обмен`, SUBMIT_OFFER)
+  ],
+  [
+    Markup.callbackButton(`Список моих ставок`, LIST_OFFERS)
+  ],
+  [
+    Markup.callbackButton(`Список возможных сделок`, LIST_POTENTIAL_MATCHES)
+  ],
+  [
+    Markup.callbackButton(`Изменить город (${getCityWord(city) || getCityWord(MINSK)})`, CHOOSE_CITY)
+  ]
+]).extra();
+
+const offersMenu = Markup.inlineKeyboard([
   [
     Markup.callbackButton(`${BUY_USD_WORD} $`, BUY_USD),
     Markup.callbackButton(`${BUY_EUR_WORD} €`, BUY_EUR)
@@ -77,15 +55,8 @@ const initialMenu = Markup.inlineKeyboard([
   [
     Markup.callbackButton(`${SELL_USD_WORD} $`, SELL_USD),
     Markup.callbackButton(`${SELL_EUR_WORD} €`, SELL_EUR)
-  ],
-  [
-    Markup.callbackButton(`Список моих ставок`, LIST_OFFERS)
-  ],
-  [
-    Markup.callbackButton(`Список возможных сделок`, LIST_POTENTIAL_MATCHES)
   ]
 ]).extra();
-
 
 const citiesButtons = Markup.inlineKeyboard([
   [
@@ -105,10 +76,10 @@ const getUser = (ctx) => {
 
 const welcomeWizard = new WizardScene(
   "welcome",
-  ctx => {
+  async ctx => {
     // console.log('ctx',ctx)
-    saveUser(ctx);
-    ctx.reply("Привет. Что будем делать? 🐰", initialMenu);
+    const user = await saveUser(ctx);
+    ctx.reply("Привет. Что будем делать? 🐰", generateMainMenu(user.city));
     return ctx.wizard.next();
   },
   async ctx => {
@@ -118,7 +89,7 @@ const welcomeWizard = new WizardScene(
       let offers;
       if (userId) {
         offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
-        const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city) : 'У вас нет ставок 💰'
+        const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city || MINSK) : 'У вас нет ставок 💰'
         await ctx.reply(offersText || '');
       }
       return ctx.scene.reenter()
@@ -129,12 +100,31 @@ const welcomeWizard = new WizardScene(
     }
   })
 
+const chooseCityWizard = new WizardScene(
+  "choose_city",
+  ctx => {
+    // console.log('ctx',ctx)
+    ctx.reply(
+      `Понятно. ${ctx.wizard.state.rate} ${currency}-${BYN}.\n`
+      + `В каком городе вы можете встретится?`,
+      citiesButtons
+    );
+    return ctx.wizard.next();
+  },
+  async ctx => {
+    const city = _.get(ctx.update, 'callback_query.data');
+    const userId = _.get(getUser(ctx),'id');
+    await updateCity({city, userId})
+    await ctx.reply(`Ок, ${city}`);
+    await ctx.scene.enter('welcome')
+  })
+
 const matchingWizard = new WizardScene(
   "matching",
   async ctx => {
     const matches = await listPotentialMatches(getUser(ctx));
     const hasMatches = matches && matches.length > 0;
-    const matchesText = readableOffers(matches, getUser(ctx).city);
+    const matchesText = readableOffers(matches, getUser(ctx).city || MINSK);
     if (hasMatches) {
       await ctx.reply(matchesText || '');
     } else {
@@ -227,13 +217,13 @@ const offerWizard = new WizardScene(
     return ctx.scene.reenter()
   }
 );
-const stage = new Stage([offerWizard, matchingWizard, welcomeWizard]);
+const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityWizard]);
 
-function saveUser(ctx) {
+async function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
-    storeUser(processedUser).catch(e => console.warn('err in storeUser', e));
+    return storeUser(processedUser).catch(e => console.warn('err in storeUser', e));
   }
 }
 
@@ -283,7 +273,7 @@ export function botInit(expressApp) {
 export function readableOffers(offers, city) {
   return _.reduce(offers, (acc, offer) => {
     const { action, amount, currency, rate } = offer;
-    const text = `${action} ${amount} ${currency} @${rate}` + '\n';
+    const text = `💰 ${action} ${amount} ${currency} @${rate} 💰` + '\n';
     return acc + text
   }, "")
     + (city ? `\n`+ `в г.${getCityWord(city)}` : '')
