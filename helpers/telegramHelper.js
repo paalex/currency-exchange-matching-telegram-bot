@@ -2,38 +2,18 @@ import Telegraf from "telegraf";
 import Markup from "telegraf/markup";
 import Stage from "telegraf/stage";
 import WizardScene from "telegraf/scenes/wizard";
-import { storeUser, storeOffer } from "./firebaseHelper";
+import {storeUser, storeOffer, listMyOffers} from "./firebaseHelper";
 import LocalSession from "telegraf-session-local";
 import _ from 'lodash';
-
-const BUY = "BUY";
-const SELL = "SELL";
-const USD = "USD";
-const EUR = "EUR";
-const BYN = "BYN";
-const BUY_USD = `${BUY}_${USD}`;
-const BUY_EUR = `${BUY}_${EUR}`;
-const SELL_USD = `${SELL}_${USD}`;
-const SELL_EUR = `${SELL}_${EUR}`;
-const MINSK = "MINSK";
-const GRODNO = "GRODNO";
-const BOBRUYSK = "BOBRUYSK";
-const BARANOVICHI = "BARANOVICHI";
-
-const MINSK_WORD = "Минск";
-const GRODNO_WORD = "Гродно";
-const BOBRUYSK_WORD = "Бобруйск";
-const BARANOVICHI_WORD = "Барановичи";
-
-
-const BUY_USD_WORD = "купить USD";
-const BUY_EUR_WORD = "купить EUR";
-const SELL_USD_WORD = "продать USD";
-const SELL_EUR_WORD = "продать EUR";
+import {BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR,
+  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS} from '../constants/appEnums';
+import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
+  BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
 
 const {TELEGRAM_API_KEY} = process.env;
 const bot = new Telegraf(TELEGRAM_API_KEY);
-const {SERVER_URL, PORT} = process.env;
+const {SERVER_URL} = process.env;
+
 function getCityWord(city) {
   let word;
   switch (city) {
@@ -91,6 +71,9 @@ const initialMenu = Markup.inlineKeyboard([
   [
     Markup.callbackButton(`${SELL_USD_WORD} $`, SELL_USD),
     Markup.callbackButton(`${SELL_EUR_WORD} €`, SELL_EUR)
+  ],
+  [
+    Markup.callbackButton(`Список моих ставок`, LIST_OFFERS)
   ]
 ]).extra();
 
@@ -107,7 +90,9 @@ const citiesButtons = Markup.inlineKeyboard([
 ]).extra();
 
 const getText = (ctx) => _.get(ctx, 'update.message.text')
-
+const getUser = (ctx) => {
+ return _.get(ctx.update, 'callback_query.from') || _.get(ctx.update, 'message.from');
+}
 
 const offerWizard = new WizardScene(
   "offer",
@@ -117,11 +102,21 @@ const offerWizard = new WizardScene(
     ctx.reply("Привет. Что будем делать? 🐰", initialMenu);
     return ctx.wizard.next();
   },
-  ctx => {
+  async ctx => {
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.reenter()
     }
-    const choice = ctx.update.callback_query.data;
+    const choice = _.get(ctx.update, 'callback_query.data');
+    if (choice === LIST_OFFERS) {
+      const userId = _.get(getUser(ctx),'id');
+      let offers;
+      if (userId) {
+        offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
+        const offersText = await readableOffers(offers)
+        ctx.reply(offersText || '');
+      }
+      return ctx.scene.reenter()
+    }
     if (choice) {
       const currency = choice.split('_')[1]
       const chosenAction = choice.split('_')[0]
@@ -157,7 +152,7 @@ const offerWizard = new WizardScene(
       return ctx.scene.reenter()
     }
     ctx.wizard.state.rate = ctx.message.text;
-    const {amount, currencySource, currencyDestination, action} = ctx.wizard.state;
+    const {currencySource, currencyDestination, action} = ctx.wizard.state;
     const currency = action === SELL ? currencySource : currencyDestination;
 
     ctx.reply(
@@ -193,13 +188,13 @@ const offerWizard = new WizardScene(
       );
       return ctx.scene.leave();
     }
-    return ctx.wizard.selectStep(0)
+    return ctx.scene.reenter()
   }
 );
 const stage = new Stage([offerWizard]);
 
 function saveUser(ctx) {
-  const user = _.get(ctx, 'update.message.from') ||  _.get(ctx, 'update.callback_query.from') ;
+  const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
     storeUser(processedUser);
@@ -210,7 +205,7 @@ export function botInit(expressApp) {
   bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
   expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
   // Scene registration
-  bot.use((new LocalSession({ database: '.data/telegraf_db.json' })).middleware())
+  bot.use((new LocalSession({database: '.data/telegraf_db.json'})).middleware())
   // bot.use(session());
   bot.use(stage.middleware());
   bot.start(async ctx => {
@@ -221,7 +216,8 @@ export function botInit(expressApp) {
     await ctx.scene.reenter().catch(e => {
       console.warn('back reenter err', e)
       ctx.scene.enter("offer").catch(e => {
-        console.warn('back enter err', e)});
+        console.warn('back enter err', e)
+      });
     });
   });
 
@@ -246,4 +242,13 @@ export function botInit(expressApp) {
   // bot.telegram.setWebhook(`${HEROKU_URL}${TELEGRAM_API_KEY}`)
   // // Http webhook, for nginx/heroku users.
   // bot.startWebhook(`/${TELEGRAM_API_KEY}`, null, PORT)
+}
+
+export async function readableOffers(offers) {
+  return _.reduce(offers, (acc, offer) => {
+    const { action, amount, city, currencyDestination, currencySource, rate } = offer;
+    const currency = action === BUY ? currencyDestination : currencySource;
+    const text = `${action} ${amount} ${currency} @${rate} в г.${getCityWord(city)}` + '\n';
+    return acc + text
+  }, "")
 }

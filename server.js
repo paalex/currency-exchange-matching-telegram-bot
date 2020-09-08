@@ -5,12 +5,9 @@
 // but feel free to use whatever libraries or frameworks you'd like through `package.json`.
 import express from "express";
 import { botInit } from "./helpers/telegramHelper";
-// our default array of dreams
-const dreams = [
-  "Find and count some sheep",
-  "Climb a really tall mountain",
-  "Wash the dishes"
-];
+import {config as dotenv_config} from "dotenv"
+dotenv_config()
+
 const {PORT} = process.env;
 const app = express();
 
