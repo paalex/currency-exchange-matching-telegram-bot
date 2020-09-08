@@ -1,0 +1,44 @@
+{
+  "//1": "describes your app and its dependencies",
+  "//2": "https://docs.npmjs.com/files/package.json",
+  "//3": "updating this file will download and update your packages",
+  "name": "hello-express",
+  "version": "0.0.1",
+  "description": "A simple Node app built on Express, instantly up and running.",
+  "main": "server.js",
+  "scripts": {
+    "start": "babel-node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "dinero.js": "^1.8.1",
+    "firebase-admin": "^9.1.1",
+    "telegraf": "^3.38.0",
+    "babel-core": "*",
+    "babel-cli": "*",
+    "babel-preset-latest": "*",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "telegraf-session-local": "^1.0.3",
+    "lodash": "^4.17.20"
+  },
+  "engines": {
+    "node": "12.x"
+  },
+  "repository": {
+    "url": "https://glitch.com/edit/#!/hello-express"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch",
+    "express"
+  ],
+  "babel": {
+    "presets": [
+      "latest"
+    ],
+    "plugins": [
+      "babel-plugin-transform-object-rest-spread"
+    ]
+  }
+}
