@@ -67,7 +67,7 @@ export async function storeOffer(user, offer) {
   const {action, city, currency} = offer;
   const {id: userId} = user;
   if (!user) throw new Error('no user to save');
-  const offerPath = `offers/${city}/${action}`;
+  const offerPath = `offers/${city}/${currency}/${action}`;
   const userOffersPath = `users/${userId}/offers`;
   const offerUid = db.child(offerPath).push().key;
   const userOfferPath = `${userOffersPath}/${offerUid}`;
@@ -153,7 +153,7 @@ export async function listPotentialMatches(user) {
 function findMatches({relevantOffersCollection, myOffers, userId}) {
   let potentialMatches = [];
   _.forEach(myOffers, myOffer => {
-    const {action, currency, rate, amount} = myOffer;
+    const {action, currency} = myOffer;
     const potentialOffers = relevantOffersCollection[currency][action];
     _.forEach(potentialOffers, offer => {
       if (offer.userId !== userId && isMatching(myOffer, offer)) {

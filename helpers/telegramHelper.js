@@ -125,6 +125,7 @@ const offerWizard = new WizardScene(
       const matches = listPotentialMatches(getUser(ctx));
       const matchesText = matches && matches.length > 0 ? readableOffers(matches, getUser(ctx).city) : 'Для вас пока нет подходящих сделок 💰❌'
       ctx.reply(matchesText || '');
+      return ctx.scene.reenter()
     } else if (choice) {
       const {currency, action} = destructTransType(choice)
       ctx.wizard.state.currency = currency;
