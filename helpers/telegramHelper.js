@@ -116,7 +116,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      return ctx.wizard.selectStep(0)
+      return ctx.scene.reenter()
     }
     const choice = ctx.update.callback_query.data;
     if (choice) {
@@ -139,7 +139,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      return ctx.wizard.selectStep(0)
+      return ctx.scene.reenter()
     }
     ctx.wizard.state.amount = ctx.message.text;
     const {amount, currencySource, currencyDestination, action} = ctx.wizard.state;
@@ -151,7 +151,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      return ctx.wizard.selectStep(0)
+      return ctx.scene.reenter()
     }
     ctx.wizard.state.rate = ctx.message.text;
     const {amount, currencySource, currencyDestination, action} = ctx.wizard.state;
@@ -166,7 +166,7 @@ const offerWizard = new WizardScene(
   },
   ctx => {
     if (!ctx.update.callback_query || _.get(ctx, 'update.message.text') === '/start') {
-      return ctx.wizard.selectStep(0)
+      return ctx.scene.reenter()
     }
     ctx.wizard.state.city = ctx.update.callback_query.data;
     const {currencySource, currencyDestination, rate, amount, action, transactionType, city} = ctx.wizard.state;
@@ -174,7 +174,6 @@ const offerWizard = new WizardScene(
     console.log("ctx.wizard.state", ctx.wizard.state)
     const offer = ctx.wizard.state;
     const user = ctx.update.callback_query.from;
-    const actionPhrase = getActionPhrase(transactionType);
     const cityWord = getCityWord(city);
     const invalid = !amount || !currency || !rate || !cityWord;
     if (!invalid) {
