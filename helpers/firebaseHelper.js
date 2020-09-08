@@ -122,7 +122,7 @@ export async function listPotentialMatches(user) {
     const city = user.city || myOffers[0].city || MINSK;
     const desiredTransactionTypes = _.reduce(myOffers, (acc, offer) => {
       const {currency, action} = offer;
-      const transType = getTransType({currency, action});
+      const transType = getTransType({currency, action: oppositeAction(action)});
       return acc[transType] ? acc : {...acc, [transType]: transType}
     }, {})
     const potentialMatchingOffersPromises = _.map(desiredTransactionTypes, async transType => {

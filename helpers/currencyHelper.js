@@ -20,6 +20,6 @@ export function isMatching(offer1, offer2) {
 }
 
 export function oppositeAction(action) {
-  if (action !== BUY || action !== SELL) throw new Error('invalid action type')
+  if (action !== BUY && action !== SELL) throw new Error('invalid action type')
   return action === BUY ? SELL : BUY;
 }
