@@ -1,0 +1,21 @@
+{
+  "sessions": [
+    {
+      "id": "156444868:156444868",
+      "data": {
+        "__scenes": {
+          "current": "offer",
+          "state": {
+            "currencySource": "USD",
+            "currencyDestination": "BYN",
+            "action": "SELL",
+            "transactionType": "SELL_USD",
+            "amount": "100",
+            "rate": "13"
+          },
+          "cursor": 1
+        }
+      }
+    }
+  ]
+}
