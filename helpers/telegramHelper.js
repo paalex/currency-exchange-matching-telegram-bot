@@ -73,11 +73,11 @@ function getActionPhrase(action) {
 function processTelegramUser(user) {
   return {
     id: user.id,
-    isBot: user.is_bot,
-    firstName: user.first_name,
-    lastName: user.last_name,
+    isBot: user.is_bot || false,
+    firstName: user.first_name || '',
+    lastName: user.last_name || '',
     username: user.username,
-    langCode: user.language_code
+    langCode: user.language_code || ''
   };
 }
 
