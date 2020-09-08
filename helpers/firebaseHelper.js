@@ -88,7 +88,9 @@ export async function storeOffer(user, offer) {
 }
 
 const parseUserOffers = (offers) => {
-  return _.map(offers, (offer, id) => ({...offer, id}))
+  return _.map(offers, (offer, id) => {
+    return {...offer, id}
+  })
 }
 
 async function fetchOffer(offer) {
