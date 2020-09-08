@@ -106,7 +106,7 @@ export async function listMyOffers(userId) {
   const snapshot = await myOffersRef.once('value');
   const userOffers = parseUserOffers(snapshot.val());
   const promises = _.map(userOffers, async userOffer => await fetchOffer(userOffer))
-  return await Promise.all(promises);
+  return promises && promises.length > 0 ? await Promise.all(promises) : []
 }
 
 async function fetchCurrencyOffers({city, currency, action}) {

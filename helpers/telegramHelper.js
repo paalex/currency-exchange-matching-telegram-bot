@@ -117,7 +117,7 @@ const offerWizard = new WizardScene(
       let offers;
       if (userId) {
         offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
-        const offersText = readableOffers(offers, getUser(ctx).city)
+        const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city) : 'У вас нет ставок 💰'
         ctx.reply(offersText || '');
       }
       return ctx.scene.reenter()
