@@ -1,7 +1,8 @@
 import admin from "firebase-admin";
 import _ from 'lodash';
 import {config as dotenv_config} from "dotenv"
-import {BUY} from "../constants/appEnums"
+import {BUY, MINSK} from "../constants/appEnums"
+import {destructTransType, getTransType, isMatching} from "./currencyHelper"
 dotenv_config()
 
 const parsedServiceAccount = process.env.FIREBASE_CONFIG_JSON
@@ -64,17 +65,18 @@ export async function storeUser(user) {
 }
 
 export async function storeOffer(user, offer) {
-  const {action, city} = offer;
+  const {action, city, currency} = offer;
+  const {id: userId} = user;
   if (!user) throw new Error('no user to save');
   const offerPath = `offers/${city}/${action}`;
-  const userOffersPath = `users/${user.id}/offers`;
+  const userOffersPath = `users/${userId}/offers`;
   const offerUid = db.child(offerPath).push().key;
   const userOfferPath = `${userOffersPath}/${offerUid}`;
   const offerPathWithUid = `${offerPath}/${offerUid}`;
   return new Promise((res, rej) => {
     db.update({
-      [offerPathWithUid]: offer,
-      [userOfferPath]: {city, action}
+      [offerPathWithUid]: {...offer, id: offerUid, userId},
+      [userOfferPath]: {city, action, currency}
     },function(error) {
       if (error) {
         console.log("User could not be saved." + error);
@@ -91,8 +93,8 @@ const parseUserOffers = (offers) => {
 }
 
 async function fetchOffer(offer) {
-  const {city, action, id} = offer;
-  const offerPath = `${city}/${action}/${id}`;
+  const {city, action, id, currency} = offer;
+  const offerPath = `${city}/${currency}/${action}/${id}`;
   const snap = await offersRef.child(offerPath).once('value');
   return snap.val()
 }
@@ -106,3 +108,57 @@ export async function listMyOffers(userId) {
   return await Promise.all(promises);
 }
 
+async function fetchCurrencyOffers({city, currency, action}) {
+  const offersPath = `${city}/${currency}/${action}`;
+  const snap = await offersRef.child(offersPath).once('value');
+  return snap.val()
+}
+
+export async function listPotentialMatches(user) {
+  const {id: userId} = user;
+  const myOffers = await listMyOffers(userId);
+  if (myOffers) {
+    const city = user.city || myOffers[0].city || MINSK;
+    const desiredTransactionTypes = _.reduce(myOffers, (acc, offer) => {
+      const {currency, action} = offer;
+      const transType = getTransType({currency, action});
+      return acc[transType] ? acc : {...acc, [transType]: transType}
+    }, {})
+    const potentialMatchingOffersPromises = _.map(desiredTransactionTypes, async transType => {
+      const {currency, action} = destructTransType(transType)
+      const offers = await fetchCurrencyOffers({city, currency, action})
+      return {[currency]: {[action]: offers}}
+    })
+    const relevantOffersArr = await Promise.all(potentialMatchingOffersPromises);
+    const relevantOffersCollection = _.reduce(relevantOffersArr, (acc, currency) => {
+      return {...acc, currency: Object.keys(currency)[0]}
+    },{})
+
+    return findMatches({relevantOffersCollection, myOffers, userId});
+  }
+  return []
+  // const cities = _.reduce(myOffers, (acc, offer) => {
+  //   const {city} = offer;
+  //   return acc[city] ? acc : {...acc, [city]: city}
+  // }, {})
+  // const myOffersPath = `${userId}/offers`;
+  // const myOffersRef = usersRef.child(myOffersPath);
+  // const snapshot = await myOffersRef.once('value');
+  // const userOffers = parseUserOffers(snapshot.val());
+  // const promises = _.map(userOffers, async userOffer => await fetchOffer(userOffer))
+  // return await Promise.all(promises);
+}
+
+function findMatches({relevantOffersCollection, myOffers, userId}) {
+  let potentialMatches = [];
+  _.forEach(myOffers, myOffer => {
+    const {action, currency, rate, amount} = myOffer;
+    const potentialOffers = relevantOffersCollection[currency][action];
+    _.forEach(potentialOffers, offer => {
+      if (offer.userId !== userId && isMatching(myOffer, offer)) {
+        potentialMatches.push(offer)
+      }
+    })
+  })
+  return potentialMatches
+}

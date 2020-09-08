@@ -2,13 +2,16 @@ import Telegraf from "telegraf";
 import Markup from "telegraf/markup";
 import Stage from "telegraf/stage";
 import WizardScene from "telegraf/scenes/wizard";
-import {storeUser, storeOffer, listMyOffers} from "./firebaseHelper";
+import {storeUser, storeOffer, listMyOffers, listPotentialMatches} from "./firebaseHelper";
 import LocalSession from "telegraf-session-local";
 import _ from 'lodash';
-import {BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR,
-  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS} from '../constants/appEnums';
+import {
+  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR,
+  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES
+} from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
+import {destructTransType} from "./currencyHelper"
 
 const {TELEGRAM_API_KEY} = process.env;
 const bot = new Telegraf(TELEGRAM_API_KEY);
@@ -74,6 +77,9 @@ const initialMenu = Markup.inlineKeyboard([
   ],
   [
     Markup.callbackButton(`Список моих ставок`, LIST_OFFERS)
+  ],
+  [
+    Markup.callbackButton(`Список возможных сделок`, LIST_POTENTIAL_MATCHES)
   ]
 ]).extra();
 
@@ -107,23 +113,23 @@ const offerWizard = new WizardScene(
       return ctx.scene.reenter()
     }
     const choice = _.get(ctx.update, 'callback_query.data');
+    const userId = _.get(getUser(ctx),'id');
     if (choice === LIST_OFFERS) {
-      const userId = _.get(getUser(ctx),'id');
       let offers;
       if (userId) {
         offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
-        const offersText = await readableOffers(offers)
+        const offersText = readableOffers(offers, getUser(ctx).city)
         ctx.reply(offersText || '');
       }
       return ctx.scene.reenter()
-    }
-    if (choice) {
-      const currency = choice.split('_')[1]
-      const chosenAction = choice.split('_')[0]
-      ctx.wizard.state.currencySource = chosenAction === BUY ? BYN : currency
-      ctx.wizard.state.currencyDestination = chosenAction === SELL ? BYN : currency;
-      ctx.wizard.state.action = chosenAction;
-      ctx.wizard.state.transactionType = choice;
+    } else if (choice === LIST_POTENTIAL_MATCHES) {
+      const matches = listPotentialMatches(getUser(ctx));
+      const matchesText = readableOffers(matches, getUser(ctx).city)
+      ctx.reply(matchesText || '');
+    } else if (choice) {
+      const {currency, action} = destructTransType(choice)
+      ctx.wizard.state.currency = currency;
+      ctx.wizard.state.action = action;
       if (currency) {
         let phrase = getActionPhrase(choice);
         if (phrase) {
@@ -140,8 +146,7 @@ const offerWizard = new WizardScene(
       return ctx.scene.reenter()
     }
     ctx.wizard.state.amount = ctx.message.text;
-    const {amount, currencySource, currencyDestination, action} = ctx.wizard.state;
-    const currency = action === SELL ? currencySource : currencyDestination;
+    const {amount, currency} = ctx.wizard.state;
     ctx.reply(
       `🐰 Ок. ${amount} ${currency}. По какому курсу?`
     );
@@ -152,9 +157,7 @@ const offerWizard = new WizardScene(
       return ctx.scene.reenter()
     }
     ctx.wizard.state.rate = ctx.message.text;
-    const {currencySource, currencyDestination, action} = ctx.wizard.state;
-    const currency = action === SELL ? currencySource : currencyDestination;
-
+    const {currency} = ctx.wizard.state;
     ctx.reply(
       `Понятно. ${ctx.wizard.state.rate} ${currency}-${BYN}.\n`
       + `В каком городе вы можете встретится?`,
@@ -167,15 +170,14 @@ const offerWizard = new WizardScene(
       return ctx.scene.reenter()
     }
     ctx.wizard.state.city = ctx.update.callback_query.data;
-    const {currencySource, currencyDestination, rate, amount, action, transactionType, city} = ctx.wizard.state;
-    const currency = action === SELL ? currencySource : currencyDestination;
+    const {currency, rate, amount, action, city} = ctx.wizard.state;
     console.log("ctx.wizard.state", ctx.wizard.state)
     const offer = ctx.wizard.state;
     const user = ctx.update.callback_query.from;
     const cityWord = getCityWord(city);
     const invalid = !amount || !currency || !rate || !cityWord;
     if (!invalid) {
-      storeOffer(user, offer)
+      storeOffer(user, offer).catch(e => console.warn('err in storeOffer', e))
       const partnerWord = action === SELL ? 'покупателя' : 'продавца';
       const actionWord = action === SELL ? 'продать' : 'купить';
       ctx.reply(
@@ -197,7 +199,7 @@ function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
-    storeUser(processedUser);
+    storeUser(processedUser).catch(e => console.warn('err in storeUser', e));
   }
 }
 
@@ -244,11 +246,11 @@ export function botInit(expressApp) {
   // bot.startWebhook(`/${TELEGRAM_API_KEY}`, null, PORT)
 }
 
-export async function readableOffers(offers) {
+export function readableOffers(offers, city) {
   return _.reduce(offers, (acc, offer) => {
-    const { action, amount, city, currencyDestination, currencySource, rate } = offer;
-    const currency = action === BUY ? currencyDestination : currencySource;
-    const text = `${action} ${amount} ${currency} @${rate} в г.${getCityWord(city)}` + '\n';
+    const { action, amount, currency, rate } = offer;
+    const text = `${action} ${amount} ${currency} @${rate}` + '\n';
     return acc + text
   }, "")
+    + (city ? `\n`+ `в г.${getCityWord(city)}` : '')
 }
