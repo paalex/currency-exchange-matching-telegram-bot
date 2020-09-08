@@ -1,8 +1,9 @@
-import serviceAccount from "../.data/service-account.json";
+// import serviceAccount from "../.data/service-account.json";
 import admin from "firebase-admin";
 
+const parsedServiceAccount = JSON.parse(process.env.FIREBASE_CONFIG_JSON);
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(parsedServiceAccount),
   databaseURL: process.env.FIREBASE_DB_URL
 });
 
@@ -55,7 +56,7 @@ export async function storeUser(user) {
         }
       });
     }
-    
+
   })
 }
 
@@ -63,7 +64,7 @@ export async function storeUser(user) {
 export async function storeOffer(user, offer) {
   const {action, city} = offer;
   if (!user) throw new Error('no user to save');
-  const offerPath = `offers/${city}/${action}`;  
+  const offerPath = `offers/${city}/${action}`;
   const userOffersPath = `users/${user.id}/offers`;
   const offerUid = db.child(offerPath).push().key;
   const userOfferPath = `${userOffersPath}/${offerUid}`;
