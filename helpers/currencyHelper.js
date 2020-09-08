@@ -1,3 +1,5 @@
+import {BUY, SELL} from "../constants/appEnums"
+
 export function getTransType({action, currency}) {
   return action && currency ? `${action}_${currency}` : null;
 }
@@ -15,4 +17,9 @@ export function isMatching(offer1, offer2) {
   const rateMatch = Math.abs(offer1.rate - offer2.rate) / offer1.rate <= rateMargin;
   const amountMatch = Math.abs(offer1.amount - offer2.amount) / offer1.amount <= amountMargin;
   return rateMatch && amountMatch;
+}
+
+export function oppositeAction(action) {
+  if (action !== BUY || action !== SELL) throw new Error('invalid action type')
+  return action === BUY ? SELL : BUY;
 }

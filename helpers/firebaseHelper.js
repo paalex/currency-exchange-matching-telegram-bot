@@ -2,7 +2,7 @@ import admin from "firebase-admin";
 import _ from 'lodash';
 import {config as dotenv_config} from "dotenv"
 import {BUY, MINSK} from "../constants/appEnums"
-import {destructTransType, getTransType, isMatching} from "./currencyHelper"
+import {destructTransType, getTransType, isMatching, oppositeAction} from "./currencyHelper"
 dotenv_config()
 
 const parsedServiceAccount = process.env.FIREBASE_CONFIG_JSON
@@ -131,8 +131,8 @@ export async function listPotentialMatches(user) {
       return {[currency]: {[action]: offers}}
     })
     const relevantOffersArr = await Promise.all(potentialMatchingOffersPromises);
-    const relevantOffersCollection = _.reduce(relevantOffersArr, (acc, currency) => {
-      return {...acc, currency: Object.keys(currency)[0]}
+    const relevantOffersCollection = _.reduce(relevantOffersArr, (acc, currencyOffers) => {
+      return {...acc, ...currencyOffers }
     },{})
 
     return findMatches({relevantOffersCollection, myOffers, userId});
@@ -154,7 +154,7 @@ function findMatches({relevantOffersCollection, myOffers, userId}) {
   let potentialMatches = [];
   _.forEach(myOffers, myOffer => {
     const {action, currency} = myOffer;
-    const potentialOffers = relevantOffersCollection[currency][action];
+    const potentialOffers = relevantOffersCollection[currency][oppositeAction(action)];
     _.forEach(potentialOffers, offer => {
       if (offer.userId !== userId && isMatching(myOffer, offer)) {
         potentialMatches.push(offer)
