@@ -55,7 +55,6 @@ export async function storeUser(user) {
           rej(error)
         } else {
           console.log("User updated successfully.");
-
         }
       });
     }

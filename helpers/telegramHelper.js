@@ -118,13 +118,13 @@ const offerWizard = new WizardScene(
       if (userId) {
         offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
         const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city) : 'У вас нет ставок 💰'
-        ctx.reply(offersText || '');
+        await ctx.reply(offersText || '');
       }
       return ctx.scene.reenter()
     } else if (choice === LIST_POTENTIAL_MATCHES) {
-      const matches = listPotentialMatches(getUser(ctx));
+      const matches = await listPotentialMatches(getUser(ctx));
       const matchesText = matches && matches.length > 0 ? readableOffers(matches, getUser(ctx).city) : 'Для вас пока нет подходящих сделок 💰❌'
-      ctx.reply(matchesText || '');
+      await ctx.reply(matchesText || '');
       return ctx.scene.reenter()
     } else if (choice) {
       const {currency, action} = destructTransType(choice)
