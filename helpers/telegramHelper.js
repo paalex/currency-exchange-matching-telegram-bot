@@ -1,7 +1,6 @@
 import Telegraf from "telegraf";
 import Markup from "telegraf/markup";
 import Stage from "telegraf/stage";
-import session from "telegraf/session";
 import WizardScene from "telegraf/scenes/wizard";
 import { storeUser, storeOffer } from "./firebaseHelper";
 import LocalSession from "telegraf-session-local";
@@ -32,6 +31,9 @@ const BUY_EUR_WORD = "купить EUR";
 const SELL_USD_WORD = "продать USD";
 const SELL_EUR_WORD = "продать EUR";
 
+const {TELEGRAM_API_KEY} = process.env;
+const bot = new Telegraf(TELEGRAM_API_KEY);
+const {HEROKU_URL} = process.env;
 function getCityWord(city) {
   let word;
   switch (city) {
@@ -92,7 +94,6 @@ const initialMenu = Markup.inlineKeyboard([
   ]
 ]).extra();
 
-const bot = new Telegraf(process.env.TELEGRAM_API_KEY);
 
 const citiesButtons = Markup.inlineKeyboard([
   [
@@ -206,7 +207,7 @@ function saveUser(ctx) {
   }
 }
 
-export function botInit() {
+export function botInit(expressApp) {
     // Scene registration
   bot.use((new LocalSession({ database: '.data/telegraf_db.json' })).middleware())
   // bot.use(session());
@@ -230,22 +231,11 @@ export function botInit() {
 //     };
 //     let text;
 
-//     switch (action) {
-//       case "buy_eur_100":
-//         text = "Вы выбрали купить €100";
-//         break;
-//       case BUY_EUR:
-//         text = "Вы выбрали купить EUR";
-//         buyEUR(ctx);
-//         break;
-//     }
-//     console.log(action);
-//     // if (text) ctx.editMessageText(text, opts);
-//     if (text) ctx.reply(text);
-//   });
-
   bot.help(ctx => ctx.reply("Send me a sticker"));
   bot.on("sticker", ctx => ctx.reply("👍"));
   bot.hears("hi", ctx => ctx.reply("Hey there"));
-  bot.launch();
+  // bot.launch();
+  bot.telegram.setWebhook(`${HEROKU_URL}${TELEGRAM_API_KEY}`)
+  // Http webhook, for nginx/heroku users.
+  bot.startWebhook(`/${TELEGRAM_API_KEY}`, null, 5000)
 }
