@@ -33,7 +33,7 @@ const SELL_EUR_WORD = "продать EUR";
 
 const {TELEGRAM_API_KEY} = process.env;
 const bot = new Telegraf(TELEGRAM_API_KEY);
-const {HEROKU_URL} = process.env;
+const {SERVER_URL, PORT} = process.env;
 function getCityWord(city) {
   let word;
   switch (city) {
@@ -208,7 +208,9 @@ function saveUser(ctx) {
 }
 
 export function botInit(expressApp) {
-    // Scene registration
+  bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`);
+  expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
+  // Scene registration
   bot.use((new LocalSession({ database: '.data/telegraf_db.json' })).middleware())
   // bot.use(session());
   bot.use(stage.middleware());
@@ -234,8 +236,11 @@ export function botInit(expressApp) {
   bot.help(ctx => ctx.reply("Send me a sticker"));
   bot.on("sticker", ctx => ctx.reply("👍"));
   bot.hears("hi", ctx => ctx.reply("Hey there"));
+  /*
+   your bot commands and all the other stuff on here ....
+  */
   // bot.launch();
-  bot.telegram.setWebhook(`${HEROKU_URL}${TELEGRAM_API_KEY}`)
-  // Http webhook, for nginx/heroku users.
-  bot.startWebhook(`/${TELEGRAM_API_KEY}`, null, 5000)
+  // bot.telegram.setWebhook(`${HEROKU_URL}${TELEGRAM_API_KEY}`)
+  // // Http webhook, for nginx/heroku users.
+  // bot.startWebhook(`/${TELEGRAM_API_KEY}`, null, PORT)
 }
