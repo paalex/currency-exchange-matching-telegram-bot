@@ -107,8 +107,10 @@ const welcomeWizard = new WizardScene(
     } else if (choice === CHOOSE_CITY) {
       await ctx.scene.enter('choose_city')
     } else if (choice === GET_NBRB) {
-      const rates = await fetchNBRBRates();
-      const text = rates ? `${rates[USD]}${USD}-BYN \n${rates[EUR]}${EUR}` : 'НБРБ не доступен'
+      const {USD: usdRate, EUR: eurRate} = await fetchNBRBRates();
+      const text = usdRate || eurRate
+        ? `${usdRate} ${USD}-BYN \n` + `${eurRate} ${EUR}-BYN`
+        : 'НБРБ не доступен'
       ctx.reply(text)
     }
   })
