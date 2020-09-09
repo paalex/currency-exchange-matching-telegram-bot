@@ -1,6 +1,6 @@
 import {BUY, SELL} from "../constants/appEnums"
 import axios from 'axios';
-
+import _ from 'lodash';
 const NBRB_USD_URL = 'https://www.nbrb.by/api/exrates/rates/usd?parammode=2';
 const NBRB_EUR_URL = 'https://www.nbrb.by/api/exrates/rates/eur?parammode=2';
 
@@ -29,8 +29,11 @@ export function oppositeAction(action) {
 }
 
 export async function fetchNBRBRates() {
-  const USD = await axios.get(NBRB_USD_URL);
-  const EUR = await axios.get(NBRB_EUR_URL);
-  console.log('USD',USD)
-  return {USD, EUR};
+  const usdRes = await axios.get(NBRB_USD_URL);
+  const eurRes = await axios.get(NBRB_EUR_URL);
+
+  const usdRate = _.get(usdRes, 'data.Cur_OfficialRate')
+  const eurRate = _.get(eurRes, 'data.Cur_OfficialRate')
+
+  return {USD: usdRate, EUR: eurRate};
 }
