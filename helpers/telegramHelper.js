@@ -39,7 +39,7 @@ const generateMatchButtons = (match) => Markup.inlineKeyboard([
 
 const generateMainMenu = (city) => Markup.inlineKeyboard([
   [
-    Markup.callbackButton(`🖐🏻 Зарегестрировать новый обмен`, SUBMIT_OFFER)
+    Markup.callbackButton(`🖐🏻 Зарегестрировать новую ставку`, SUBMIT_OFFER)
   ],
   [
     Markup.callbackButton(`📝 Список моих ставок`, LIST_OFFERS)
