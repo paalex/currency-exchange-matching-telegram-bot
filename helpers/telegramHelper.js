@@ -121,7 +121,7 @@ const chooseCityWizard = new WizardScene(
 const matchingWizard = new WizardScene(
   "matching",
   async ctx => {
-    const matches = await listPotentialMatches(getUser(ctx));
+    const matches = await listPotentialMatches(getUser(ctx).id);
     const hasMatches = matches && matches.length > 0;
     const matchesText = readableOffers(matches, getUser(ctx).city || MINSK);
     if (hasMatches) {
@@ -278,5 +278,5 @@ export function readableOffers(offers, city) {
     const text = `💰 ${action} ${amount} ${currency} @${rate} 💰` + '\n';
     return acc + text
   }, "")
-    + (city ? `\n`+ `в г.${getCityWord(city)}` : '')
+    + (city ? `\n`+ `в г. ${getCityWord(city)}` : '')
 }

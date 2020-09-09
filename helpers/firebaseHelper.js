@@ -103,11 +103,12 @@ async function fetchCurrencyOffers({city, currency, action}) {
   return snap.val()
 }
 
-export async function listPotentialMatches(user) {
-  const {id: userId} = user;
+export async function listPotentialMatches(userId) {
   const myOffers = await listMyOffers(userId);
+  const fbUserSnap = await usersRef.child(userId).once('value');
+  const fbUser = fbUserSnap.val();
   if (myOffers) {
-    const city = user.city || myOffers[0].city || MINSK;
+    const city = fbUser.city || myOffers[0].city || MINSK;
     const desiredTransactionTypes = _.reduce(myOffers, (acc, offer) => {
       const {currency, action} = offer;
       const transType = getTransType({currency, action: oppositeAction(action)});
