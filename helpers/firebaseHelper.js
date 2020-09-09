@@ -37,28 +37,12 @@ export async function storeUser(user) {
   if (!user) throw new Error('no user to save');
   const userRef = usersRef.child(user.id);
   const snapshot = await userRef.once('value');
-  console.log(snapshot.val());
-  return new Promise((res, rej) => {
-    if (!snapshot.val()) {
-      return userRef.set(user, function(error) {
-        if (error) {
-          console.log("User could not be saved." + error);
-          rej(error)
-        } else {
-          console.log("User saved successfully.");
-        }
-      });
-    } else {
-      return userRef.update({...user}, function(error) {
-        if (error) {
-          console.log("User could not be saved." + error);
-          rej(error)
-        } else {
-          console.log("User updated successfully.");
-        }
-      });
-    }
-  })
+  // console.log(snapshot.val());
+  if (!snapshot.val()) {
+    return userRef.set(user);
+  } else {
+    return userRef.update({...user});
+  }
 }
 
 export async function storeOffer(user, offer) {
