@@ -295,16 +295,9 @@ export function botInit(expressApp) {
     });
   });
 
-//   bot.on("callback_query", ctx => {
-//     const cbQuery = ctx.update.callback_query;
-//     console.log(cbQuery);
-//     const action = cbQuery.data;
-//     const msg = cbQuery.message;
-//     const opts = {
-//       chat_id: msg.chat.id,
-//       message_id: msg.message_id
-//     };
-//     let text;
+  bot.on("callback_query", ctx => {
+    ctx.stage.enter('welcome')
+  })
 
   // bot.help(ctx => ctx.reply("Send me a sticker"));
   bot.on("sticker", ctx => ctx.reply("👍"));
