@@ -34,6 +34,7 @@ var offersRef = db.child("offers");
 // });
 
 export async function storeUser(user) {
+  console.log('storeUser', user)
   if (!user) throw new Error('no user to save');
   const userRef = usersRef.child(user.id);
   const snapshot = await userRef.once('value');
