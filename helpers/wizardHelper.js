@@ -52,7 +52,7 @@ const offersMenu = Markup.inlineKeyboard([
   ]
 ]).extra();
 
-const generateMatchButtons = ({match, withBack}) => {
+const generateMatchKeyboard = ({match, withBack}) => {
   const buttons = [[
     Markup.callbackButton(`✅`, JSON.stringify({selection: APPROVE_MATCH, offerId: match.id})),
     Markup.callbackButton(`❌`, JSON.stringify({selection: REJECT_MATCH, offerId: match.id}))
@@ -62,7 +62,7 @@ const generateMatchButtons = ({match, withBack}) => {
   return Markup.inlineKeyboard(buttons).extra();
 }
 
-const citiesButtons = Markup.inlineKeyboard([
+const citiesMenu = Markup.inlineKeyboard([
   [
     Markup.callbackButton(MINSK_WORD, MINSK),
     Markup.callbackButton(GRODNO_WORD, GRODNO)
@@ -125,14 +125,6 @@ export const welcomeWizard = new WizardScene(
         ctx.reply(text, backToMainMenuKeyboard)
         return ctx.wizard.next();
     }
-    if (choice === LIST_OFFERS) {
-
-    } else if (choice === LIST_POTENTIAL_MATCHES) {
-    } else if (choice === SUBMIT_OFFER) {
-    } else if (choice === CHOOSE_CITY) {
-    } else if (choice === GET_NBRB_USD || choice === GET_NBRB_EUR) {
-
-    }
     return ctx.scene.reenter()
   },
   ctx => {
@@ -146,7 +138,7 @@ export const chooseCityWizard = new WizardScene(
     console.log('chooseCityWizard1')
     // console.log('ctx',ctx)
     ctx.reply(`В каком городе вы можете встретится?`,
-      citiesButtons
+      citiesMenu
     );
     return ctx.wizard.next();
   },
@@ -169,7 +161,10 @@ export const matchingWizard = new WizardScene(
   "matching",
   async ctx => {
     console.log('matchingWizard1')
-    const {matches} = await listPotentialMatches(getUser(ctx).id);
+    const {matches} = await listPotentialMatches(getUser(ctx).id).catch(e => {
+      console.log('err in listPotentialMatches', e)
+      return goHome(ctx)
+    });
     ctx.wizard.state.matches = matches;
     console.log('matchingWizard1 matches',matches)
     const hasMatches = matches && matches.length > 0;
@@ -177,11 +172,10 @@ export const matchingWizard = new WizardScene(
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
       await ctx.reply(`🤝 Список возможных сделок:`);
       await asyncForEach(matchesToDisplay, async (match, idx, arr) => {
-        await ctx.reply(`${readableOffer(match) || 'Уже недоступен'}`, generateMatchButtons({match, withBack: idx === arr.length - 1}))
+        await ctx.reply(`${readableOffer(match) || 'Уже недоступен'}`, generateMatchKeyboard({match, withBack: idx === arr.length - 1}))
       });
     } else {
-      await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
-      return goHome(ctx);
+      ctx.reply('Для вас пока нет подходящих сделок 💰❌', backToMainMenuKeyboard);
     }
     return ctx.wizard.next()
   },
@@ -189,32 +183,27 @@ export const matchingWizard = new WizardScene(
     console.log('matchingWizard2', _.get(ctx,'update.callback_query'))
     if (isNotValidCB(ctx)) return goHome(ctx);
     const choice = _.get(ctx.update, 'callback_query.data');
-    if (choice !== MAIN_MENU) {
-      let selection, offerId;
-      try {
-        const res = JSON.parse(choice) || {};
-        selection = res.selection;
-        offerId = res.offerId;
-      } catch (e) {
-        console.log('err parsing JSON in matchingWizard1')
-        return goHome(ctx)
-      } finally {
-      }
-      const {matches} = ctx.wizard.state;
-      console.log('matches', matches)
-      const match = _.find(matches, m => m.id === offerId);
-      console.log('match', match)
-      const cityWord = getCityWord(match.city);
-      const user = getUser(ctx);
-      if (selection === APPROVE_MATCH) {
-        const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `, контакт: @${_.get(match,'username')} , в г. ${cityWord}`
-        await ctx.reply(text1, backToMainMenuKeyboard);
-        const text2 = `Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${_.get(user, 'username')} , в г. ${cityWord}`
-        sendTgMsgByChatId({chatId: `@${match.username}`, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
-
-      }
-    } else {
+    let selection, offerId;
+    try {
+      const res = JSON.parse(choice) || {};
+      selection = res.selection;
+      offerId = res.offerId;
+    } catch (e) {
+      console.log('err parsing JSON in matchingWizard1')
       return goHome(ctx)
+    } finally {
+    }
+    const {matches} = ctx.wizard.state;
+    console.log('matches', matches)
+    const match = _.find(matches, m => m.id === offerId);
+    console.log('match', match)
+    const cityWord = getCityWord(match.city);
+    const user = getUser(ctx);
+    if (selection === APPROVE_MATCH) {
+      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `, контакт: @${_.get(match,'username')} , в г. ${cityWord}`
+      await ctx.reply(text1, backToMainMenuKeyboard);
+      const text2 = `Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${_.get(user, 'username')} , в г. ${cityWord}`
+      sendTgMsgByChatId({chatId: `@${match.username}`, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
     }
   },
   ctx => {
@@ -248,6 +237,7 @@ export const offerWizard = new WizardScene(
         }
       }
     }
+    return goHome(ctx)
   },
   async ctx => {
     console.log('offerWizard3')
@@ -275,7 +265,7 @@ export const offerWizard = new WizardScene(
     ctx.reply(
       `Понятно. ${formatRate(rate)} ${currency}-${BYN}.\n`
       + `В каком городе вы можете встретится?`,
-      citiesButtons
+      citiesMenu
     );
     return ctx.wizard.next();
   },

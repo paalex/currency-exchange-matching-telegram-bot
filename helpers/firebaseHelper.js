@@ -36,9 +36,8 @@ var offersRef = db.child("offers");
 export async function storeUser(user) {
   if (!user) throw new Error('no user to save');
   const userRef = usersRef.child(user.id);
-  const snapshot = await userRef.once('value');
-  // console.log(snapshot.val());
-  if (!snapshot.val()) {
+  const fbUser = await fetchUser(user.id)
+  if (!fbUser) {
     return userRef.set(user);
   } else {
     return userRef.update({...user});
@@ -91,9 +90,9 @@ async function fetchOffer(offer) {
 export async function listMyOffers(userId) {
   const myOffersPath = `${userId}/offers`;
   const myOffersRef = usersRef.child(myOffersPath);
-  const snapshot = await myOffersRef.once('value');
-  const userOffers = parseUserOffers(snapshot.val());
-  const promises = _.map(userOffers, async userOffer => await fetchOffer(userOffer))
+  const userOffers = (await myOffersRef.once('value')).val();
+  const parsedUserOffers = parseUserOffers(userOffers);
+  const promises = _.map(parsedUserOffers, async userOffer => await fetchOffer(userOffer))
   return promises && promises.length > 0 ? await Promise.all(promises) : []
 }
 
@@ -105,9 +104,8 @@ async function fetchCurrencyOffers({city, currency, action}) {
 
 export async function listPotentialMatches(userId) {
   const myOffers = await listMyOffers(userId);
-  const fbUserSnap = await usersRef.child(userId).once('value');
-  const fbUser = fbUserSnap.val();
-  if (myOffers) {
+  const fbUser = await fetchUser(userId)
+  if (Array.isArray(myOffers) && myOffers.length > 0) {
     const city = fbUser.city || myOffers[0].city || MINSK;
     const desiredTransactionTypes = _.reduce(myOffers, (acc, offer) => {
       const {currency, action} = offer;
@@ -126,17 +124,7 @@ export async function listPotentialMatches(userId) {
 
     return {matches: findMatches({relevantOffersCollection, myOffers, userId}), city};
   }
-  return []
-  // const cities = _.reduce(myOffers, (acc, offer) => {
-  //   const {city} = offer;
-  //   return acc[city] ? acc : {...acc, [city]: city}
-  // }, {})
-  // const myOffersPath = `${userId}/offers`;
-  // const myOffersRef = usersRef.child(myOffersPath);
-  // const snapshot = await myOffersRef.once('value');
-  // const userOffers = parseUserOffers(snapshot.val());
-  // const promises = _.map(userOffers, async userOffer => await fetchOffer(userOffer))
-  // return await Promise.all(promises);
+  return {matches: []}
 }
 
 function findMatches({relevantOffersCollection, myOffers, userId}) {
@@ -151,4 +139,9 @@ function findMatches({relevantOffersCollection, myOffers, userId}) {
     })
   })
   return potentialMatches
+}
+
+async function fetchUser(userId) {
+  const userSnap = await usersRef.child(userId).once('value');
+  return userSnap.val();
 }
