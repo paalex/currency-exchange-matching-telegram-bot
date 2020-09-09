@@ -114,8 +114,7 @@ const welcomeWizard = new WizardScene(
       const unavailableText = 'НБРБ не доступен';
       const {USD: usdRate, EUR: eurRate} = await fetchNBRBRates().catch(e => {
         console.log('err fetchNBRBRates', e);
-        ctx.reply(unavailableText, backToMainMenuButton)
-      });
+      }) || {};
       const text = usdRate || eurRate
         ? `${usdRate} ${USD}-BYN \n` + `${eurRate} ${EUR}-BYN`
         : unavailableText
