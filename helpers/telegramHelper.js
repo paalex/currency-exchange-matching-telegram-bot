@@ -78,7 +78,7 @@ const welcomeWizard = new WizardScene(
   "welcome",
   async ctx => {
     saveUser(ctx).catch(e => console.log('err saving user', e));
-    ctx.reply("Привет. Что будем делать? 🐰")//, generateMainMenu(user.city));
+    ctx.reply("Привет. Что будем делать? 🐰", generateMainMenu());
     return ctx.wizard.next();
   },
   async ctx => {
