@@ -42,5 +42,8 @@
     "plugins": [
       "babel-plugin-transform-object-rest-spread"
     ]
+  },
+  "devDependencies": {
+    "@firebase/app": "^0.6.10"
   }
 }

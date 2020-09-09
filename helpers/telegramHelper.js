@@ -1,4 +1,4 @@
-import Telegraf from "telegraf";
+import Telegraf, { Telegram } from 'telegraf';
 import Markup from "telegraf/markup";
 import Stage from "telegraf/stage";
 import WizardScene from "telegraf/scenes/wizard";
@@ -16,6 +16,7 @@ import {getCityWord, getActionPhrase} from "./textHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
 const bot = new Telegraf(TELEGRAM_API_KEY);
+const telegram = new Telegram(TELEGRAM_API_KEY); // required for initiating a conversation
 
 function isTransactionType(p) {
   return p === BUY_USD || p === BUY_EUR || p === SELL_USD || p === SELL_EUR
@@ -191,8 +192,12 @@ const matchingWizard = new WizardScene(
       const {selection, offerId} = JSON.parse(choice) || {};
       const {matches} = ctx.wizard.state;
       const match = _.find(matches, m => m.id === offerId);
-      const text = selection === APPROVE_MATCH ? `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `Контакт: @${match.username}` : ''
-      await ctx.reply(text, backToMainMenuButton);
+      const cityWord = getCityWord(match.city);
+      const user = getUser(ctx);
+      const text1 = selection === APPROVE_MATCH ? `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `, контакт: @${match.username} , в г. ${cityWord}` : ''
+      ctx.reply(text1, backToMainMenuButton);
+      const text2 = selection === APPROVE_MATCH ? `Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${user.username} , в г. ${cityWord}` : ''
+      sendTgMsgByChatId({chatId: `@${match.username}`, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
     } else {
       return ctx.scene.enter('welcome')
     }
@@ -240,7 +245,7 @@ const offerWizard = new WizardScene(
     ctx.wizard.state.amount = ctx.message.text;
     const {amount, currency} = ctx.wizard.state;
     ctx.reply(
-      `🐰 Ок. ${amount} ${currency}. По какому курсу?`
+      `🐰 Ок. ${amount} ${currency}. По какому курсу? (Сколько рублей вы просите за один ${currency}?)`
     );
     return ctx.wizard.next();
   },
@@ -302,8 +307,10 @@ async function saveUser(ctx) {
 }
 
 export function botInit(expressApp) {
-  bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
-  expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
+  if (SERVER_URL) {
+    bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
+    expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
+  }
   // Scene registration
   bot.use((new LocalSession({database: '.data/telegraf_db.json'})).middleware())
   // bot.use(session());
@@ -329,7 +336,9 @@ export function botInit(expressApp) {
   /*
    your bot commands and all the other stuff on here ....
   */
-  // bot.launch();
+  if (!SERVER_URL) {
+    bot.launch();
+  }
   // bot.telegram.setWebhook(`${HEROKU_URL}${TELEGRAM_API_KEY}`)
   // // Http webhook, for nginx/heroku users.
   // bot.startWebhook(`/${TELEGRAM_API_KEY}`, null, PORT)
@@ -353,4 +362,8 @@ async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array);
   }
+}
+
+async function sendTgMsgByChatId({chatId, message}) {
+  await telegram.sendMessage(chatId, message);
 }
