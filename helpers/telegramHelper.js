@@ -270,6 +270,7 @@ const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityW
 
 async function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
+  console.log('saveUser',saveUser);
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
     return storeUser(processedUser);
