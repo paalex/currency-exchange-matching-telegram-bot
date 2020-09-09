@@ -115,9 +115,11 @@ const welcomeWizard = new WizardScene(
       const text = usdRate || eurRate
         ? `${usdRate} ${USD}-BYN \n` + `${eurRate} ${EUR}-BYN`
         : 'НБРБ не доступен'
-      ctx.reply(text)
+      ctx.reply(text, backToMainMenuButton)
     }
-  })
+  },
+  ctx => ctx.scene.reenter()
+  )
 
 const chooseCityWizard = new WizardScene(
   "choose_city",
@@ -132,9 +134,11 @@ const chooseCityWizard = new WizardScene(
     const city = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
     await updateCity({city, userId})
-    await ctx.reply(`Ок, ${city}`);
-    await ctx.scene.enter('welcome')
-  })
+    await ctx.reply(`Ок, ${city}`, backToMainMenuButton)
+    return ctx.wizard.next();
+  },
+  ctx => ctx.scene.enter('welcome')
+)
 
 const matchingWizard = new WizardScene(
   "matching",
@@ -154,6 +158,9 @@ const matchingWizard = new WizardScene(
     return ctx.wizard.next()
   },
   async ctx => {
+    if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
+      return ctx.scene.enter('welcome')
+    }
     const choice = _.get(ctx.update, 'callback_query.data');
     if (choice) {
       const {selection, offerId} = JSON.parse(choice) || {};
@@ -162,13 +169,7 @@ const matchingWizard = new WizardScene(
         const match = _.find(matches, m => m.id === offerId);
         await ctx.reply(`Вы подтвердили следующую сделку:\n`+ readableOffer(match) + `Контакт: ${match.username}`);
       }
-      return
     }
-    await ctx.reply('',backToMainMenuButton);
-    return ctx.wizard.next()
-  },
-  ctx => {
-    ctx.scene.enter('welcome')
   })
 
 const offerWizard = new WizardScene(
@@ -179,8 +180,7 @@ const offerWizard = new WizardScene(
   },
   async ctx => {
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
-      await ctx.scene.enter('welcome')
-      return
+      return ctx.scene.enter('welcome')
     }
     const choice = _.get(ctx.update, 'callback_query.data');
     if (choice) {
@@ -247,7 +247,7 @@ const offerWizard = new WizardScene(
       return ctx.wizard.next();
     }
     ctx.reply(`Что-то не так, давай начнем с начало`)
-    return ctx.scene.reenter()
+    ctx.scene.reenter()
   },
   ctx => {
     ctx.scene.enter('welcome')
