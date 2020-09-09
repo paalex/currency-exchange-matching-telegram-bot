@@ -287,11 +287,8 @@ export function botInit(expressApp) {
     ctx.scene.enter("welcome");
   });
   bot.action("back", async ctx => {
-    await ctx.scene.reenter().catch(e => {
-      console.warn('back reenter err', e)
-      ctx.scene.enter("offer").catch(e => {
+    ctx.scene.enter("offer").catch(e => {
         console.warn('back enter err', e)
-      });
     });
   });
 
