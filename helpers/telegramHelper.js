@@ -90,11 +90,19 @@ const getUser = (ctx) => {
 const welcomeWizard = new WizardScene(
   "welcome",
   async ctx => {
-    saveUser(ctx).catch(e => console.log('err saving user', e));
+    console.log('welcomeWizard1')
+    const user = getUser(ctx);
+    if (!user.username) {
+      ctx.reply("В вашем профиле телеграма не хватает имени пользователя. Имя пользователя можно легко " +
+        "добавить в 'Настройки' => 'Имя пользователя'. Без имени пользователя я не смогу соединить вас с другими пользователями чтобы осуществить обмены")
+      return ctx.scene.leave()
+    }
+    await saveUser(ctx).catch(e => console.log('err saving user', e)).finally();
     ctx.reply("Привет. Что будем делать? 🐰", generateMainMenu());
     return ctx.wizard.next();
   },
   async ctx => {
+    console.log('welcomeWizard2')
     const choice = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
     if (choice === LIST_OFFERS) {
@@ -128,12 +136,14 @@ const welcomeWizard = new WizardScene(
     return ctx.scene.reenter()
   },
   ctx => {
+    console.log('welcomeWizard3')
     return ctx.scene.reenter()
   })
 
 const chooseCityWizard = new WizardScene(
   "choose_city",
   ctx => {
+    console.log('chooseCityWizard1')
     // console.log('ctx',ctx)
     ctx.reply(`В каком городе вы можете встретится?`,
       citiesButtons
@@ -141,19 +151,24 @@ const chooseCityWizard = new WizardScene(
     return ctx.wizard.next();
   },
   async ctx => {
+    console.log('chooseCityWizard2')
     const city = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
     await updateCity({city, userId})
     await ctx.reply(`Ок, ${getCityWord(city)}`, backToMainMenuButton)
     return ctx.wizard.next();
   },
-  ctx => ctx.scene.enter('welcome')
+  ctx => {
+    console.log('chooseCityWizard3')
+    ctx.scene.enter('welcome')
+  }
 )
 
 const matchingWizard = new WizardScene(
   "matching",
   async ctx => {
-    const {matches, city} = await listPotentialMatches(getUser(ctx).id);
+    console.log('matchingWizard1')
+    const {matches} = await listPotentialMatches(getUser(ctx).id);
     ctx.wizard.state.matches = matches;
     const hasMatches = matches && matches.length > 0;
     if (hasMatches) {
@@ -167,6 +182,7 @@ const matchingWizard = new WizardScene(
     return ctx.wizard.next()
   },
   async ctx => {
+    console.log('matchingWizard2')
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.enter('welcome')
     }
@@ -181,16 +197,21 @@ const matchingWizard = new WizardScene(
       return ctx.scene.enter('welcome')
     }
   },
-  ctx => ctx.scene.enter('welcome')
+  ctx => {
+    console.log('matchingWizard1')
+    ctx.scene.enter('welcome')
+  }
 )
 
 const offerWizard = new WizardScene(
   'offer',
   async ctx => {
+    console.log('offerWizard1')
     ctx.reply("Что будем делать? 🐰", offersMenu);
     return ctx.wizard.next();
   },
   async ctx => {
+    console.log('offerWizard2')
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       return ctx.scene.enter('welcome')
     }
@@ -211,6 +232,7 @@ const offerWizard = new WizardScene(
     }
   },
   async ctx => {
+    console.log('offerWizard3')
     if (ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       await ctx.scene.enter('welcome')
       return
@@ -223,6 +245,7 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   async ctx => {
+    console.log('offerWizard4')
     if (ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       await ctx.scene.enter('welcome')
       return
@@ -237,6 +260,7 @@ const offerWizard = new WizardScene(
     return ctx.wizard.next();
   },
   async ctx => {
+    console.log('offerWizard5')
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       await ctx.scene.enter('welcome')
       return
@@ -262,6 +286,7 @@ const offerWizard = new WizardScene(
     ctx.scene.reenter()
   },
   ctx => {
+    console.log('offerWizard6')
     ctx.scene.enter('welcome')
   }
 );
@@ -269,7 +294,7 @@ const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityW
 
 async function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
-  console.log('saveUser',saveUser);
+  console.log('saveUser',user);
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
     return storeUser(processedUser);
