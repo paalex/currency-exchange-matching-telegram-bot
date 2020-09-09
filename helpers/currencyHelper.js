@@ -28,12 +28,16 @@ export function oppositeAction(action) {
   return action === BUY ? SELL : BUY;
 }
 
-export async function fetchNBRBRates() {
+export async function fetchNBRBRatesUSD() {
   const usdRes = await axios.get(NBRB_USD_URL);
+  return _.get(usdRes, 'data.Cur_OfficialRate')
+}
+
+export async function fetchNBRBRatesEUR() {
   const eurRes = await axios.get(NBRB_EUR_URL);
+  return _.get(eurRes, 'data.Cur_OfficialRate')
+}
 
-  const usdRate = _.get(usdRes, 'data.Cur_OfficialRate')
-  const eurRate = _.get(eurRes, 'data.Cur_OfficialRate')
-
-  return {USD: usdRate, EUR: eurRate};
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

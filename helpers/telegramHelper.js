@@ -6,12 +6,12 @@ import LocalSession from "telegraf-session-local";
 import _ from 'lodash';
 import {storeUser, storeOffer, listMyOffers, listPotentialMatches, updateCity} from "./firebaseHelper";
 import {
-  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH, GET_NBRB, USD, EUR,
+  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH, GET_NBRB_USD, GET_NBRB_EUR, USD, EUR,
   MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY, MAIN_MENU
 } from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
-import {destructTransType, fetchNBRBRates} from "./currencyHelper"
+import {destructTransType, fetchNBRBRatesUSD, fetchNBRBRatesEUR} from "./currencyHelper"
 import {getCityWord, getActionPhrase} from "./textHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
@@ -51,7 +51,8 @@ const generateMainMenu = (city) => Markup.inlineKeyboard([
     Markup.callbackButton(`🏠 Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
   ],
   [
-    Markup.callbackButton(`🏛 Курс НБРБ сегодня`, GET_NBRB) //(${getCityWord(city) || getCityWord(MINSK)})
+    Markup.callbackButton(`🏛 Курс НБРБ USD`, GET_NBRB_USD),
+    Markup.callbackButton(`🏛 Курс НБРБ EUR`, GET_NBRB_EUR)
   ]
 ]).extra();
 
@@ -110,22 +111,25 @@ const welcomeWizard = new WizardScene(
       await ctx.scene.enter('offer')
     } else if (choice === CHOOSE_CITY) {
       await ctx.scene.enter('choose_city')
-    } else if (choice === GET_NBRB) {
+    } else if (choice === GET_NBRB_USD || choice === GET_NBRB_EUR) {
       const unavailableText = 'НБРБ не доступен';
-      const {USD: usdRate, EUR: eurRate} = await fetchNBRBRates().catch(e => {
-        console.log('err fetchNBRBRates', e);
-      }) || {};
-      const text = usdRate || eurRate
-        ? `${usdRate} ${USD}-BYN \n` + `${eurRate} ${EUR}-BYN`
-        : unavailableText
+      const currency = choice === GET_NBRB_USD ? USD : EUR;
+      let rate;
+      if (currency === USD) {
+        rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e));
+      } else if (currency === EUR) {
+        rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
+      }
+      const text = rate ? `${rate} ${USD}-BYN` : unavailableText
       ctx.reply(text, backToMainMenuButton)
+      return ctx.wizard.next();
     }
+    return ctx.scene.reenter()
   },
   ctx => {
     console.log('back selected', ctx.update)
     return ctx.scene.reenter()
-  }
-  )
+  })
 
 const chooseCityWizard = new WizardScene(
   "choose_city",
