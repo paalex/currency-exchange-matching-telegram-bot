@@ -145,7 +145,7 @@ const chooseCityWizard = new WizardScene(
     const city = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
     await updateCity({city, userId})
-    await ctx.reply(`Ок, ${city}`, backToMainMenuButton)
+    await ctx.reply(`Ок, ${getCityWord(city)}`, backToMainMenuButton)
     return ctx.wizard.next();
   },
   ctx => ctx.scene.enter('welcome')
@@ -175,13 +175,16 @@ const matchingWizard = new WizardScene(
     const choice = _.get(ctx.update, 'callback_query.data');
     if (choice) {
       const {selection, offerId} = JSON.parse(choice) || {};
-      if (selection === APPROVE_MATCH) {
-        const {matches} = ctx.wizard.state;
-        const match = _.find(matches, m => m.id === offerId);
-        await ctx.reply(`Вы подтвердили следующую сделку:\n`+ readableOffer(match) + `Контакт: @${match.username}`);
-      }
+      const {matches} = ctx.wizard.state;
+      const match = _.find(matches, m => m.id === offerId);
+      const text = selection === APPROVE_MATCH ? `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `Контакт: @${match.username}` : ''
+      await ctx.reply(text, backToMainMenuButton);
+      return ctx.wizard.next();
     }
-  })
+    return ctx.scene.enter('welcome')
+  },
+  ctx => ctx.scene.enter('welcome')
+)
 
 const offerWizard = new WizardScene(
   'offer',
