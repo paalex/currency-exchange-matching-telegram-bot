@@ -36,12 +36,7 @@ var offersRef = db.child("offers");
 export async function storeUser(user) {
   if (!user) throw new Error('no user to save');
   const userRef = usersRef.child(user.id);
-  const fbUser = await fetchUser(user.id)
-  if (!fbUser) {
-    return userRef.set(user);
-  } else {
-    return userRef.update({...user});
-  }
+  return userRef.update(user);
 }
 
 export async function storeOffer(user, offer) {

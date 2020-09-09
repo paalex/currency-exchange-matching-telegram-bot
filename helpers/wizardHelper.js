@@ -57,8 +57,7 @@ const generateMatchKeyboard = ({match, withBack}) => {
     Markup.callbackButton(`✅`, JSON.stringify({selection: APPROVE_MATCH, offerId: match.id})),
     Markup.callbackButton(`❌`, JSON.stringify({selection: REJECT_MATCH, offerId: match.id}))
     ]]
-  if (withBack) buttons.push(backToMainMenuButton)
-  console.log('buttons', buttons)
+  if (withBack) buttons.push([backToMainMenuButton])
   return Markup.inlineKeyboard(buttons).extra();
 }
 
@@ -166,7 +165,6 @@ export const matchingWizard = new WizardScene(
       return goHome(ctx)
     });
     ctx.wizard.state.matches = matches;
-    console.log('matchingWizard1 matches',matches)
     const hasMatches = matches && matches.length > 0;
     if (hasMatches) {
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
@@ -180,7 +178,7 @@ export const matchingWizard = new WizardScene(
     return ctx.wizard.next()
   },
   async ctx => {
-    console.log('matchingWizard2', _.get(ctx,'update.callback_query'))
+    console.log('matchingWizard2')
     if (isNotValidCB(ctx)) return goHome(ctx);
     const choice = _.get(ctx.update, 'callback_query.data');
     let selection, offerId;
@@ -194,16 +192,13 @@ export const matchingWizard = new WizardScene(
     } finally {
     }
     const {matches} = ctx.wizard.state;
-    console.log('matches', matches)
     const match = _.find(matches, m => m.id === offerId);
-    console.log('match', match)
-    const cityWord = getCityWord(match.city);
     const user = getUser(ctx);
     if (selection === APPROVE_MATCH) {
-      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `, контакт: @${_.get(match,'username')} , в г. ${cityWord}`
+      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `, контакт: @${_.get(match,'username')}`
       await ctx.reply(text1, backToMainMenuKeyboard);
-      const text2 = `Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${_.get(user, 'username')} , в г. ${cityWord}`
-      sendTgMsgByChatId({chatId: `@${match.username}`, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
+      const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${_.get(user, 'username')}`
+      sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
     }
   },
   ctx => {

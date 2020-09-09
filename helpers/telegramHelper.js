@@ -44,7 +44,7 @@ export function readableOffers(offers, city) {
 
 export function readableOffer(offer) {
   const { action, amount, currency, rate, city } = offer;
-  return `💰 ${action} ${amount} ${currency} @${formatRate(rate)} ${getCityWord(city)}` + '\n';
+  return `💰 ${action} ${amount} ${currency} @${formatRate(rate)}, ${getCityWord(city)}`;
 }
 
 export async function asyncForEach(array, callback) {
