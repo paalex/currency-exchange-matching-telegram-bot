@@ -78,8 +78,8 @@ const welcomeWizard = new WizardScene(
   "welcome",
   async ctx => {
     console.log('ctx.update',ctx.update)
-    const user = await saveUser(ctx);
-    ctx.reply("Привет. Что будем делать? 🐰", generateMainMenu(user.city));
+    // const user = await saveUser(ctx);
+    ctx.reply("Привет. Что будем делать? 🐰")//, generateMainMenu(user.city));
     return ctx.wizard.next();
   },
   async ctx => {
@@ -223,7 +223,6 @@ const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityW
 
 async function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
-  console.log('saveUser', user)
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
     return storeUser(processedUser).catch(e => console.warn('err in storeUser', e));
@@ -260,7 +259,7 @@ export function botInit(expressApp) {
 //     };
 //     let text;
 
-  bot.help(ctx => ctx.reply("Send me a sticker"));
+  // bot.help(ctx => ctx.reply("Send me a sticker"));
   bot.on("sticker", ctx => ctx.reply("👍"));
   bot.hears("hi", ctx => ctx.reply("Hey there"));
   /*
