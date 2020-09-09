@@ -95,7 +95,7 @@ const welcomeWizard = new WizardScene(
       return ctx.scene.reenter()
     } else if (choice === LIST_POTENTIAL_MATCHES) {
       await ctx.scene.enter('matching')
-    } else if (isTransactionType(choice)) {
+    } else if (choice === SUBMIT_OFFER) {
       await ctx.scene.enter('offer')
     }
   })
@@ -141,6 +141,10 @@ const matchingWizard = new WizardScene(
 
 const offerWizard = new WizardScene(
   "offer",
+  async ctx => {
+    ctx.reply("Что будем делать? 🐰", offersMenu);
+    return ctx.wizard.next();
+  },
   async ctx => {
     if (!ctx.update.callback_query || getText(ctx) === '/start' || getText(ctx) === '/back') {
       await ctx.scene.enter('welcome')
