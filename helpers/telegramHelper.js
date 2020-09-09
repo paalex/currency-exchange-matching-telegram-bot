@@ -2,16 +2,16 @@ import Telegraf from "telegraf";
 import Markup from "telegraf/markup";
 import Stage from "telegraf/stage";
 import WizardScene from "telegraf/scenes/wizard";
-import {storeUser, storeOffer, listMyOffers, listPotentialMatches, updateCity} from "./firebaseHelper";
 import LocalSession from "telegraf-session-local";
 import _ from 'lodash';
+import {storeUser, storeOffer, listMyOffers, listPotentialMatches, updateCity} from "./firebaseHelper";
 import {
-  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH,
+  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH, GET_NBRB,
   MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY
 } from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
-import {destructTransType} from "./currencyHelper"
+import {destructTransType, fetchNBRBRates} from "./currencyHelper"
 import {getCityWord, getActionPhrase} from "./textHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
@@ -49,6 +49,9 @@ const generateMainMenu = (city) => Markup.inlineKeyboard([
   ],
   [
     Markup.callbackButton(`🏠 Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
+  ],
+  [
+    Markup.callbackButton(`🏛 Курс НБРБ сегодня`, GET_NBRB) //(${getCityWord(city) || getCityWord(MINSK)})
   ]
 ]).extra();
 
@@ -103,6 +106,10 @@ const welcomeWizard = new WizardScene(
       await ctx.scene.enter('offer')
     } else if (choice === CHOOSE_CITY) {
       await ctx.scene.enter('choose_city')
+    } else if (choice === GET_NBRB) {
+      const rates = await fetchNBRBRates();
+      const text = rates ? `${rates[USD]}${USD}-BYN \n${rates[EUR]}${EUR}` : 'НБРБ не доступен'
+      ctx.reply(text)
     }
   })
 

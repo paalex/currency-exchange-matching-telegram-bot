@@ -1,4 +1,8 @@
 import {BUY, SELL} from "../constants/appEnums"
+import axios from 'axios';
+
+const NBRB_USD_URL = 'https://www.nbrb.by/api/exrates/rates/usd?parammode=2';
+const NBRB_EUR_URL = 'https://www.nbrb.by/api/exrates/rates/eur?parammode=2';
 
 export function getTransType({action, currency}) {
   return action && currency ? `${action}_${currency}` : null;
@@ -22,4 +26,10 @@ export function isMatching(offer1, offer2) {
 export function oppositeAction(action) {
   if (action !== BUY && action !== SELL) throw new Error('invalid action type')
   return action === BUY ? SELL : BUY;
+}
+
+export async function fetchNBRBRates() {
+  const USD = await axios.get(NBRB_USD_URL);
+  const EUR = await axios.get(NBRB_EUR_URL);
+  return {USD, EUR};
 }
