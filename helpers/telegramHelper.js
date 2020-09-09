@@ -296,7 +296,7 @@ export function botInit(expressApp) {
   });
 
   bot.on("callback_query", ctx => {
-    ctx.stage.enter('welcome')
+    ctx.scene.enter('welcome')
   })
 
   // bot.help(ctx => ctx.reply("Send me a sticker"));
