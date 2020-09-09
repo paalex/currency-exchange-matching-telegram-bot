@@ -106,11 +106,11 @@ const welcomeWizard = new WizardScene(
       }
       return ctx.scene.reenter()
     } else if (choice === LIST_POTENTIAL_MATCHES) {
-      await ctx.scene.enter('matching')
+      return ctx.scene.enter('matching')
     } else if (choice === SUBMIT_OFFER) {
-      await ctx.scene.enter('offer')
+      return ctx.scene.enter('offer')
     } else if (choice === CHOOSE_CITY) {
-      await ctx.scene.enter('choose_city')
+      return ctx.scene.enter('choose_city')
     } else if (choice === GET_NBRB_USD || choice === GET_NBRB_EUR) {
       const currency = choice === GET_NBRB_USD ? USD : EUR;
       let rate;
@@ -183,7 +183,7 @@ const matchingWizard = new WizardScene(
   })
 
 const offerWizard = new WizardScene(
-  "offer",
+  'offer',
   async ctx => {
     console.log('offerWizard', ctx.update)
     ctx.reply("Что будем делать? 🐰", offersMenu);
