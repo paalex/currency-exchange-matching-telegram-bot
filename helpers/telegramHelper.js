@@ -39,7 +39,7 @@ const generateMatchButtons = (match) => Markup.inlineKeyboard([
 
 const generateMainMenu = (city) => Markup.inlineKeyboard([
   [
-    Markup.callbackButton(`🖐🏻 Начать новый обмен валюты`, SUBMIT_OFFER)
+    Markup.callbackButton(`✍️ Начать новый обмен валюты`, SUBMIT_OFFER)
   ],
   [
     Markup.callbackButton(`📝 Мои объявления`, LIST_OFFERS)
@@ -48,7 +48,7 @@ const generateMainMenu = (city) => Markup.inlineKeyboard([
     Markup.callbackButton(`🤝 Подходящие мне объявления`, LIST_POTENTIAL_MATCHES)
   ],
   [
-    Markup.callbackButton(`🏠 Выбрать / Изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
+    Markup.callbackButton(`📍 Выбрать / Изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
   ],
   [
     Markup.callbackButton(`🏛 Курс НБРБ USD`, GET_NBRB_USD),
@@ -160,9 +160,9 @@ const matchingWizard = new WizardScene(
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
       await asyncForEach(matchesToDisplay,
         async match => await ctx.reply(`🤝 Список возможных сделок: \n\n${readableOffer(match) || ''}`, generateMatchButtons(match)));
+      await ctx.reply('', backToMainMenuButton);
     } else {
-      await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
-      return ctx.scene.enter('welcome')
+      await ctx.reply('Для вас пока нет подходящих сделок 💰❌', backToMainMenuButton);
     }
     return ctx.wizard.next()
   },
@@ -171,15 +171,15 @@ const matchingWizard = new WizardScene(
       return ctx.scene.enter('welcome')
     }
     const choice = _.get(ctx.update, 'callback_query.data');
-    if (choice) {
+    if (choice !== MAIN_MENU) {
       const {selection, offerId} = JSON.parse(choice) || {};
       const {matches} = ctx.wizard.state;
       const match = _.find(matches, m => m.id === offerId);
       const text = selection === APPROVE_MATCH ? `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `Контакт: @${match.username}` : ''
       await ctx.reply(text, backToMainMenuButton);
-      return ctx.wizard.next();
+    } else {
+      return ctx.scene.enter('welcome')
     }
-    return ctx.scene.enter('welcome')
   },
   ctx => ctx.scene.enter('welcome')
 )
