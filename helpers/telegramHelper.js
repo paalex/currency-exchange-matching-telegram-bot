@@ -6,7 +6,7 @@ import {storeUser, storeOffer, listMyOffers, listPotentialMatches, updateCity} f
 import LocalSession from "telegraf-session-local";
 import _ from 'lodash';
 import {
-  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR,
+  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH,
   MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY
 } from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
@@ -31,6 +31,11 @@ function processTelegramUser(user) {
     langCode: user.language_code || ''
   };
 }
+
+const generateMatchButtons = (match) => Markup.inlineKeyboard([
+  Markup.callbackButton(`✅`, JSON.stringify({selection: APPROVE_MATCH, offerId: match.id})),
+  Markup.callbackButton(`❌`, JSON.stringify({selection: REJECT_MATCH, offerId: match.id}))
+]).extra();
 
 const generateMainMenu = (city) => Markup.inlineKeyboard([
   [
@@ -121,11 +126,13 @@ const chooseCityWizard = new WizardScene(
 const matchingWizard = new WizardScene(
   "matching",
   async ctx => {
-    const matches = await listPotentialMatches(getUser(ctx).id);
+    const {matches, city} = await listPotentialMatches(getUser(ctx).id);
     const hasMatches = matches && matches.length > 0;
-    const matchesText = readableOffers(matches, getUser(ctx).city || MINSK);
     if (hasMatches) {
-      await ctx.reply(matchesText || '');
+      const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
+      await asyncForEach(matchesToDisplay,
+        async match => await ctx.reply(readableOffer(match) || '', generateMatchButtons(match)));
+      ctx.reply(`в г. ${getCityWord(city)}`);
     } else {
       await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
       return ctx.scene.enter('welcome')
@@ -134,7 +141,6 @@ const matchingWizard = new WizardScene(
   },
   async ctx => {
     const choice = _.get(ctx.update, 'callback_query.data');
-    console.log(choice)
     return ctx.scene.enter('welcome')
   })
 
@@ -279,4 +285,15 @@ export function readableOffers(offers, city) {
     return acc + text
   }, "")
     + (city ? `\n`+ `в г. ${getCityWord(city)}` : '')
+}
+
+export function readableOffer(offer) {
+  const { action, amount, currency, rate } = offer;
+  return `💰 ${action} ${amount} ${currency} @${rate} 💰` + '\n';
+}
+
+async function asyncForEach(array, callback) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array);
+  }
 }

@@ -124,7 +124,7 @@ export async function listPotentialMatches(userId) {
       return {...acc, ...currencyOffers }
     },{})
 
-    return findMatches({relevantOffersCollection, myOffers, userId});
+    return {matches: findMatches({relevantOffersCollection, myOffers, userId}), city};
   }
   return []
   // const cities = _.reduce(myOffers, (acc, offer) => {
