@@ -178,7 +178,7 @@ const matchingWizard = new WizardScene(
       if (selection === APPROVE_MATCH) {
         const {matches} = ctx.wizard.state;
         const match = _.find(matches, m => m.id === offerId);
-        await ctx.reply(`Вы подтвердили следующую сделку:\n`+ readableOffer(match) + `Контакт: ${match.username}`);
+        await ctx.reply(`Вы подтвердили следующую сделку:\n`+ readableOffer(match) + `Контакт: @${match.username}`);
       }
     }
   })
