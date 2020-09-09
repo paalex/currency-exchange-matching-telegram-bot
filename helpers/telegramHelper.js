@@ -122,7 +122,10 @@ const welcomeWizard = new WizardScene(
       ctx.reply(text, backToMainMenuButton)
     }
   },
-  ctx => ctx.scene.reenter()
+  ctx => {
+    console.log('back selected', ctx.update)
+    return ctx.scene.reenter()
+  }
   )
 
 const chooseCityWizard = new WizardScene(
