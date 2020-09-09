@@ -31,5 +31,6 @@ export function oppositeAction(action) {
 export async function fetchNBRBRates() {
   const USD = await axios.get(NBRB_USD_URL);
   const EUR = await axios.get(NBRB_EUR_URL);
+  console.log('USD',USD)
   return {USD, EUR};
 }
