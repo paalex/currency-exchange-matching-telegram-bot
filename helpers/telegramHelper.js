@@ -111,10 +111,14 @@ const welcomeWizard = new WizardScene(
     } else if (choice === CHOOSE_CITY) {
       await ctx.scene.enter('choose_city')
     } else if (choice === GET_NBRB) {
-      const {USD: usdRate, EUR: eurRate} = await fetchNBRBRates();
+      const unavailableText = 'НБРБ не доступен';
+      const {USD: usdRate, EUR: eurRate} = await fetchNBRBRates().catch(e => {
+        console.log('err fetchNBRBRates', e);
+        ctx.reply(unavailableText, backToMainMenuButton)
+      });
       const text = usdRate || eurRate
         ? `${usdRate} ${USD}-BYN \n` + `${eurRate} ${EUR}-BYN`
-        : 'НБРБ не доступен'
+        : unavailableText
       ctx.reply(text, backToMainMenuButton)
     }
   },
