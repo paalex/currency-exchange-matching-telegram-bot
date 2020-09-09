@@ -11,7 +11,7 @@ import {
 } from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
-import {destructTransType, fetchNBRBRatesUSD, fetchNBRBRatesEUR} from "./currencyHelper"
+import {destructTransType, fetchNBRBRatesUSD, fetchNBRBRatesEUR, formatRate} from "./currencyHelper"
 import {getCityWord, getActionPhrase} from "./textHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
@@ -121,7 +121,7 @@ const welcomeWizard = new WizardScene(
         rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
       }
       const unavailableText = 'НБРБ не доступен';
-      const text = rate ? `${rate} ${currency}-BYN` : unavailableText
+      const text = rate ? `${formatRate(rate)} ${currency}-BYN` : unavailableText
       ctx.reply(text, backToMainMenuButton)
       return ctx.wizard.next();
     }
@@ -228,9 +228,9 @@ const offerWizard = new WizardScene(
       return
     }
     ctx.wizard.state.rate = ctx.message.text;
-    const {currency} = ctx.wizard.state;
+    const {currency, rate} = ctx.wizard.state;
     ctx.reply(
-      `Понятно. ${ctx.wizard.state.rate} ${currency}-${BYN}.\n`
+      `Понятно. ${formatRate(rate)} ${currency}-${BYN}.\n`
       + `В каком городе вы можете встретится?`,
       citiesButtons
     );
@@ -254,7 +254,7 @@ const offerWizard = new WizardScene(
       const actionWord = action === SELL ? 'продать' : 'купить';
       ctx.reply(
         `Итак, вы готовы ${actionWord}:\n`
-        + `${amount} ${currency} по курсу ${rate} ${currency}-${BYN} в городе ${cityWord}.\n\n`
+        + `${amount} ${currency} по курсу ${formatRate(rate)} ${currency}-${BYN} в городе ${cityWord}.\n\n`
         + `Как только найду вам ${partnerWord}, сообщу 🐰`, backToMainMenuButton);
       return ctx.wizard.next();
     }
@@ -313,7 +313,7 @@ export function botInit(expressApp) {
 export function readableOffers(offers, city) {
   return _.reduce(offers, (acc, offer) => {
     const { action, amount, currency, rate } = offer;
-    const text = `💰 ${action} ${amount} ${currency} @${rate} 💰` + '\n';
+    const text = `💰 ${action} ${amount} ${currency} @${formatRate(rate)} 💰` + '\n';
     return acc + text
   }, "")
     + (city ? `\n`+ `в г. ${getCityWord(city)}` : '')
@@ -321,7 +321,7 @@ export function readableOffers(offers, city) {
 
 export function readableOffer(offer) {
   const { action, amount, currency, rate, city } = offer;
-  return `💰 ${action} ${amount} ${currency} @${rate} ${getCityWord(city)}` + '\n';
+  return `💰 ${action} ${amount} ${currency} @${formatRate(rate)} ${getCityWord(city)}` + '\n';
 }
 
 async function asyncForEach(array, callback) {

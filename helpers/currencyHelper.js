@@ -41,3 +41,7 @@ export async function fetchNBRBRatesEUR() {
 function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export function formatRate(rate) {
+  return Number.parseFloat(rate).toFixed(4)
+}
