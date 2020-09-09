@@ -159,7 +159,7 @@ const matchingWizard = new WizardScene(
     if (hasMatches) {
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
       await asyncForEach(matchesToDisplay,
-        async match => await ctx.reply(`🤝 Список возможных сделок \n${readableOffer(match) || ''}`, generateMatchButtons(match)));
+        async match => await ctx.reply(`🤝 Список возможных сделок: \n\n${readableOffer(match) || ''}`, generateMatchButtons(match)));
       ctx.reply(`в г. ${getCityWord(city)}`);
     } else {
       await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
