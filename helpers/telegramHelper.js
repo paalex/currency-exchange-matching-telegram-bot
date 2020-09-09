@@ -128,7 +128,6 @@ const welcomeWizard = new WizardScene(
     return ctx.scene.reenter()
   },
   ctx => {
-    console.log('back selected', ctx.update)
     return ctx.scene.reenter()
   })
 
@@ -189,7 +188,6 @@ const matchingWizard = new WizardScene(
 const offerWizard = new WizardScene(
   'offer',
   async ctx => {
-    console.log('offerWizard', ctx.update)
     ctx.reply("Что будем делать? 🐰", offersMenu);
     return ctx.wizard.next();
   },
@@ -246,7 +244,7 @@ const offerWizard = new WizardScene(
     }
     ctx.wizard.state.city = ctx.update.callback_query.data;
     const {currency, rate, amount, action, city} = ctx.wizard.state;
-    console.log("ctx.wizard.state", ctx.wizard.state)
+    updateCity({city, userId: getUser(ctx).id}).catch(e => console.log('error setting city', e));
     const offer = ctx.wizard.state;
     const user = ctx.update.callback_query.from;
     const cityWord = getCityWord(city);
