@@ -189,7 +189,10 @@ export const matchingWizard = new WizardScene(
     } catch (e) {
       console.log('err parsing JSON in matchingWizard1')
       return goHome(ctx)
-    } finally {
+    }
+    if (!selection || !offerId) {
+      await ctx.reply('Сделка уже недоступна', backToMainMenuKeyboard);
+      return
     }
     const {matches} = ctx.wizard.state;
     const match = _.find(matches, m => m.id === offerId);
@@ -199,6 +202,8 @@ export const matchingWizard = new WizardScene(
       await ctx.reply(text1, backToMainMenuKeyboard);
       const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${_.get(user, 'username')}`
       sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
+    } else {
+      await ctx.reply('Ок', backToMainMenuKeyboard);
     }
   },
   ctx => {
