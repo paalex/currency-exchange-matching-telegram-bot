@@ -43,7 +43,7 @@ const generateMainMenu = (city) => Markup.inlineKeyboard([
     Markup.callbackButton(`Список возможных сделок`, LIST_POTENTIAL_MATCHES)
   ],
   [
-    Markup.callbackButton(`Изменить город (${getCityWord(city) || getCityWord(MINSK)})`, CHOOSE_CITY)
+    Markup.callbackButton(`Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
   ]
 ]).extra();
 
@@ -77,8 +77,7 @@ const getUser = (ctx) => {
 const welcomeWizard = new WizardScene(
   "welcome",
   async ctx => {
-    const user = await saveUser(ctx);
-    console.log('user', user)
+    saveUser(ctx).catch(e => console.log('err saving user', e));
     ctx.reply("Привет. Что будем делать? 🐰")//, generateMainMenu(user.city));
     return ctx.wizard.next();
   },
@@ -225,7 +224,7 @@ async function saveUser(ctx) {
   const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
-    return storeUser(processedUser).catch(e => console.warn('err in storeUser', e));
+    return storeUser(processedUser);
   }
 }
 
