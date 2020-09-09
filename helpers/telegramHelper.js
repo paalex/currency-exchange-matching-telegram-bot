@@ -7,7 +7,7 @@ import _ from 'lodash';
 import {storeUser, storeOffer, listMyOffers, listPotentialMatches, updateCity} from "./firebaseHelper";
 import {
   BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH, GET_NBRB, USD, EUR,
-  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY
+  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY, MAIN_MENU
 } from '../constants/appEnums';
 import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
   BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
@@ -77,6 +77,10 @@ const citiesButtons = Markup.inlineKeyboard([
   ]
 ]).extra();
 
+const backToMainMenuButton = Markup.inlineKeyboard([
+  Markup.callbackButton("Главное меню ↩️", MAIN_MENU),
+]).extra()
+
 const getText = (ctx) => _.get(ctx, 'update.message.text')
 const getUser = (ctx) => {
  return _.get(ctx.update, 'callback_query.from') || _.get(ctx.update, 'message.from');
@@ -136,6 +140,7 @@ const matchingWizard = new WizardScene(
   "matching",
   async ctx => {
     const {matches, city} = await listPotentialMatches(getUser(ctx).id);
+    ctx.wizard.state.matches = matches;
     const hasMatches = matches && matches.length > 0;
     if (hasMatches) {
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
@@ -150,7 +155,20 @@ const matchingWizard = new WizardScene(
   },
   async ctx => {
     const choice = _.get(ctx.update, 'callback_query.data');
-    return ctx.scene.enter('welcome')
+    if (choice) {
+      const {selection, offerId} = JSON.parse(choice) || {};
+      if (selection === APPROVE_MATCH) {
+        const {matches} = ctx.wizard.state;
+        const match = _.find(matches, m => m.id === offerId);
+        await ctx.reply(`Вы подтвердили следующую сделку:\n`+ readableOffer(match) + `Контакт: ${match.username}`);
+      }
+      return
+    }
+    await ctx.reply('',backToMainMenuButton);
+    return ctx.wizard.next()
+  },
+  ctx => {
+    ctx.scene.enter('welcome')
   })
 
 const offerWizard = new WizardScene(
@@ -225,14 +243,14 @@ const offerWizard = new WizardScene(
       ctx.reply(
         `Итак, вы готовы ${actionWord}:\n`
         + `${amount} ${currency} по курсу ${rate} ${currency}-${BYN} в городе ${cityWord}.\n\n`
-        + `Как только найду вам ${partnerWord}, сообщу 🐰`,
-        Markup.inlineKeyboard([
-          Markup.callbackButton("Начать новый обмен  ↩️", "back"),
-        ]).extra()
-      );
-      return ctx.scene.leave();
+        + `Как только найду вам ${partnerWord}, сообщу 🐰`, backToMainMenuButton);
+      return ctx.wizard.next();
     }
+    ctx.reply(`Что-то не так, давай начнем с начало`)
     return ctx.scene.reenter()
+  },
+  ctx => {
+    ctx.scene.enter('welcome')
   }
 );
 const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityWizard]);

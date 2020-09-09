@@ -47,7 +47,7 @@ export async function storeUser(user) {
 
 export async function storeOffer(user, offer) {
   const {action, city, currency} = offer;
-  const {id: userId} = user;
+  const {id: userId, username} = user;
   if (!user) throw new Error('no user to save');
   const offerPath = `offers/${city}/${currency}/${action}`;
   const userOffersPath = `users/${userId}/offers`;
@@ -56,7 +56,7 @@ export async function storeOffer(user, offer) {
   const offerPathWithUid = `${offerPath}/${offerUid}`;
   return new Promise((res, rej) => {
     db.update({
-      [offerPathWithUid]: {...offer, id: offerUid, userId},
+      [offerPathWithUid]: {...offer, id: offerUid, userId, username},
       [userOfferPath]: {city, action, currency}
     },function(error) {
       if (error) {
