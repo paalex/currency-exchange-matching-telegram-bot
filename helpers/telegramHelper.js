@@ -39,13 +39,13 @@ const generateMatchButtons = (match) => Markup.inlineKeyboard([
 
 const generateMainMenu = (city) => Markup.inlineKeyboard([
   [
-    Markup.callbackButton(`🖐🏻 Зарегестрировать новую ставку`, SUBMIT_OFFER)
+    Markup.callbackButton(`🖐🏻 Создать новое предложение`, SUBMIT_OFFER)
   ],
   [
-    Markup.callbackButton(`📝 Список моих ставок`, LIST_OFFERS)
+    Markup.callbackButton(`📝 Список моих предложений`, LIST_OFFERS)
   ],
   [
-    Markup.callbackButton(`🤝 Список возможных обменов`, LIST_POTENTIAL_MATCHES)
+    Markup.callbackButton(`🤝 Список возможных сделок`, LIST_POTENTIAL_MATCHES)
   ],
   [
     Markup.callbackButton(`🏠 Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
