@@ -39,16 +39,16 @@ const generateMatchButtons = (match) => Markup.inlineKeyboard([
 
 const generateMainMenu = (city) => Markup.inlineKeyboard([
   [
-    Markup.callbackButton(`🖐🏻 Создать новое предложение`, SUBMIT_OFFER)
+    Markup.callbackButton(`🖐🏻 Начать новый обмен валюты`, SUBMIT_OFFER)
   ],
   [
-    Markup.callbackButton(`📝 Список моих предложений`, LIST_OFFERS)
+    Markup.callbackButton(`📝 Мои объявления`, LIST_OFFERS)
   ],
   [
-    Markup.callbackButton(`🤝 Список возможных сделок`, LIST_POTENTIAL_MATCHES)
+    Markup.callbackButton(`🤝 Подходящие мне объявления`, LIST_POTENTIAL_MATCHES)
   ],
   [
-    Markup.callbackButton(`🏠 Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
+    Markup.callbackButton(`🏠 Выбрать / Изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
   ],
   [
     Markup.callbackButton(`🏛 Курс НБРБ USD`, GET_NBRB_USD),
@@ -160,7 +160,6 @@ const matchingWizard = new WizardScene(
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
       await asyncForEach(matchesToDisplay,
         async match => await ctx.reply(`🤝 Список возможных сделок: \n\n${readableOffer(match) || ''}`, generateMatchButtons(match)));
-      ctx.reply(`в г. ${getCityWord(city)}`);
     } else {
       await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
       return ctx.scene.enter('welcome')
@@ -321,8 +320,8 @@ export function readableOffers(offers, city) {
 }
 
 export function readableOffer(offer) {
-  const { action, amount, currency, rate } = offer;
-  return `💰 ${action} ${amount} ${currency} @${rate} 💰` + '\n';
+  const { action, amount, currency, rate, city } = offer;
+  return `💰 ${action} ${amount} ${currency} @${rate} ${getCityWord(city)}` + '\n';
 }
 
 async function asyncForEach(array, callback) {
