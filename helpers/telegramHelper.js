@@ -288,12 +288,14 @@ export function botInit(expressApp) {
     ctx.scene.enter("welcome");
   });
   bot.action("back", async ctx => {
-    ctx.scene.enter("offer").catch(e => {
+    console.log("bot.action back")
+    ctx.scene.enter("welcome").catch(e => {
         console.warn('back enter err', e)
     });
   });
 
   bot.on("callback_query", ctx => {
+    console.log("bot.on callback_query")
     ctx.scene.enter('welcome')
   })
 
