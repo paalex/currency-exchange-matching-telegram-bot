@@ -102,7 +102,8 @@ const welcomeWizard = new WizardScene(
       if (userId) {
         offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
         const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city || MINSK) : 'У вас нет ставок 💰'
-        await ctx.reply(offersText || '');
+        await ctx.reply(offersText || '', backToMainMenuButton)
+        return ctx.wizard.next();
       }
       return ctx.scene.reenter()
     } else if (choice === LIST_POTENTIAL_MATCHES) {
