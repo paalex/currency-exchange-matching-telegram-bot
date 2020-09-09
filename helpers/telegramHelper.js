@@ -102,7 +102,7 @@ const welcomeWizard = new WizardScene(
       if (userId) {
         offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
         const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city || MINSK) : 'У вас нет ставок 💰'
-        await ctx.reply(offersText || '', backToMainMenuButton)
+        await ctx.reply(`📝 Список ваших предложений: \n${offersText || ''}`, backToMainMenuButton)
         return ctx.wizard.next();
       }
       return ctx.scene.reenter()
@@ -159,7 +159,7 @@ const matchingWizard = new WizardScene(
     if (hasMatches) {
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
       await asyncForEach(matchesToDisplay,
-        async match => await ctx.reply(readableOffer(match) || '', generateMatchButtons(match)));
+        async match => await ctx.reply(`🤝 Список возможных сделок \n${readableOffer(match) || ''}`, generateMatchButtons(match)));
       ctx.reply(`в г. ${getCityWord(city)}`);
     } else {
       await ctx.reply('Для вас пока нет подходящих сделок 💰❌');
