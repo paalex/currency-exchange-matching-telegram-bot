@@ -104,9 +104,7 @@ const chooseCityWizard = new WizardScene(
   "choose_city",
   ctx => {
     // console.log('ctx',ctx)
-    ctx.reply(
-      `Понятно. ${ctx.wizard.state.rate} ${currency}-${BYN}.\n`
-      + `В каком городе вы можете встретится?`,
+    ctx.reply(`В каком городе вы можете встретится?`,
       citiesButtons
     );
     return ctx.wizard.next();
