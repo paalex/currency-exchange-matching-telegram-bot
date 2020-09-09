@@ -34,16 +34,16 @@ function processTelegramUser(user) {
 
 const generateMainMenu = (city) => Markup.inlineKeyboard([
   [
-    Markup.callbackButton(`Зарегестрировать новый обмен`, SUBMIT_OFFER)
+    Markup.callbackButton(`🖐🏻 Зарегестрировать новый обмен`, SUBMIT_OFFER)
   ],
   [
-    Markup.callbackButton(`Список моих ставок`, LIST_OFFERS)
+    Markup.callbackButton(`📝 Список моих ставок`, LIST_OFFERS)
   ],
   [
-    Markup.callbackButton(`Список возможных сделок`, LIST_POTENTIAL_MATCHES)
+    Markup.callbackButton(`🤝 Список возможных обменов`, LIST_POTENTIAL_MATCHES)
   ],
   [
-    Markup.callbackButton(`Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
+    Markup.callbackButton(`🏠 Выбрать/изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
   ]
 ]).extra();
 
@@ -96,6 +96,8 @@ const welcomeWizard = new WizardScene(
       await ctx.scene.enter('matching')
     } else if (choice === SUBMIT_OFFER) {
       await ctx.scene.enter('offer')
+    } else if (choice === CHOOSE_CITY) {
+      await ctx.scene.enter('choose_city')
     }
   })
 
