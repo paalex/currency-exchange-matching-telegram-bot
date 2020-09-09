@@ -237,7 +237,6 @@ export function botInit(expressApp) {
   // bot.use(session());
   bot.use(stage.middleware());
   bot.start(async ctx => {
-    saveUser(ctx);
     ctx.scene.enter("welcome");
   });
   bot.action("back", async ctx => {
