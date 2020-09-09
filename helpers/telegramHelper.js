@@ -77,8 +77,8 @@ const getUser = (ctx) => {
 const welcomeWizard = new WizardScene(
   "welcome",
   async ctx => {
-    console.log('ctx.update',ctx.update)
-    // const user = await saveUser(ctx);
+    const user = await saveUser(ctx);
+    console.log('user', user)
     ctx.reply("Привет. Что будем делать? 🐰")//, generateMainMenu(user.city));
     return ctx.wizard.next();
   },
