@@ -52,8 +52,8 @@ const generateMainMenu = (city) => Markup.inlineKeyboard([
     Markup.callbackButton(`📍 Выбрать / Изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
   ],
   [
-    Markup.callbackButton(`🏛 Курс НБРБ USD`, GET_NBRB_USD),
-    Markup.callbackButton(`🏛 Курс НБРБ EUR`, GET_NBRB_EUR)
+    Markup.callbackButton(`🏛 Курс НБРБ 🇺🇸`, GET_NBRB_USD),
+    Markup.callbackButton(`🏛 Курс НБРБ 🇪🇺`, GET_NBRB_EUR)
   ]
 ]).extra();
 
