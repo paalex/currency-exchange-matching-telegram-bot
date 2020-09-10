@@ -20,8 +20,7 @@ export const bot = new Telegraf(TELEGRAM_API_KEY,{
 export const telegram = new Telegram(TELEGRAM_API_KEY); // required for initiating a conversation
 
 export function botInit(expressApp) {
-  expressApp.use(Telegraf.log());
-  if (SERVER_URL) {
+  if (!isPolling) {
     console.log('SERVER_URL',SERVER_URL)
     bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
     expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
@@ -56,7 +55,7 @@ export function botInit(expressApp) {
   /*
    your bot commands and all the other stuff on here ....
   */
-  if (!SERVER_URL) {
+  if (isPolling) {
     bot.launch();
   }
   // bot.telegram.setWebhook(`${HEROKU_URL}${TELEGRAM_API_KEY}`)
