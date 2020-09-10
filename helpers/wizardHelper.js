@@ -110,7 +110,6 @@ export const welcomeWizard = new WizardScene(
       await saveUser(user).catch(e => console.log('err saving user', e));
       await ctx.reply("Что будем делать? 🐰", generateMainMenu);
     }
-    return ctx.scene.leave();
   })
 
 export const chooseCityWizard = new WizardScene(
