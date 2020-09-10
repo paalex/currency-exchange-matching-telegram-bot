@@ -292,10 +292,10 @@ export const matchingWizard = new WizardScene(
       const warning = `⚠️За скупку, продажу или обмен валюты без лицензии или госрегистрации предусмотрена административная ответственность⚠️`;
       const advice = `💡Законный способ через обменный пункт: продавец валюты сдает ее в кассу, а покупатель приобретает сразу после него💡`;
       const text1 = `Вы подтвердили следующую сделку:\n\n` + readableOffer(match.offer)
-        + `\n Контакт: @${_.get(match,'offer.username')} \n\n${warning} \n ${advice}`;
+        + `\n Контакт: @${_.get(match,'offer.username')} \n\n${warning} \n\n ${advice}`;
       await ctx.reply(text1, backToMainMenuKeyboard);
       const text2 = `🎉 Я нашел для вас сделку:\n` + readableOffer(match.myOffer)
-        + `\n Контакт: @${_.get(user, 'username')} \n\n${warning} \n ${advice}`
+        + `\n Контакт: @${_.get(user, 'username')} \n\n${warning} \n\n ${advice}`
       await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
       acceptMatch({match: match.offer, user}).catch(e => console.log('failed acceptMatch', match ,e))
       sendTgMsgByChatId({chatId: match.offer.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
