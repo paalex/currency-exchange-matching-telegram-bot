@@ -259,7 +259,8 @@ export const matchingWizard = new WizardScene(
       const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
       await ctx.reply(`🤝 Список возможных сделок:`);
       await asyncForEach(matchesToDisplay, async (match, idx, arr) => {
-        await ctx.reply(`${readableOffer(match) || 'Уже недоступен'}`, generateMatchKeyboard({match, withBack: idx === arr.length - 1}))
+        await ctx.reply(`${readableOffer(match.offer) || 'Уже недоступен'}`,
+          generateMatchKeyboard({match: match.offer, withBack: idx === arr.length - 1}))
       });
     } else {
       await ctx.reply('Для вас пока нет подходящих сделок 💰❌ \nКак только найду, сообщу 🐰', backToMainMenuKeyboard);
@@ -285,22 +286,22 @@ export const matchingWizard = new WizardScene(
       return
     }
     const {matches} = ctx.wizard.state;
-    const match = _.find(matches, m => m.id === offerId);
+    const match = _.find(matches, m => m.offer.id === offerId);
     const user = getUser(ctx);
     if (selection === APPROVE_MATCH) {
       const warning = `⚠️За скупку, продажу или обмен валюты без лицензии или госрегистрации предусмотрена административная ответственность⚠️`;
       const advice = `💡Законный способ через обменный пункт: продавец валюты сдает ее в кассу, а покупатель приобретает сразу после него💡`;
-      const text1 = `Вы подтвердили следующую сделку:\n\n` + readableOffer(match)
-        + `\n Контакт: @${_.get(match,'username')} \n\n${warning} \n ${advice}`;
+      const text1 = `Вы подтвердили следующую сделку:\n\n` + readableOffer(match.offer)
+        + `\n Контакт: @${_.get(match,'offer.username')} \n\n${warning} \n ${advice}`;
       await ctx.reply(text1, backToMainMenuKeyboard);
-      const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match)
-        + `\n Контакт: @${_.get(user, 'username')}`
+      const text2 = `🎉 Я нашел для вас сделку:\n` + readableOffer(match.myOffer)
+        + `\n Контакт: @${_.get(user, 'username')} \n\n${warning} \n ${advice}`
       await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
-      acceptMatch({match, user}).catch(e => console.log('failed acceptMatch', e))
-      sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
+      acceptMatch({match: match.offer, user}).catch(e => console.log('failed acceptMatch', match ,e))
+      sendTgMsgByChatId({chatId: match.offer.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
     } else {
       await ctx.editMessageText('➡️🗑', emptyInlineKeyboard);
-      await rejectMatch({match, user}).catch(e => console.log('err rejecting a match', e))
+      await rejectMatch({match: match.offer, user}).catch(e => console.log('err rejecting a match', e))
     }
   },
   ctx => {

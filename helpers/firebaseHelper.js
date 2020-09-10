@@ -129,7 +129,7 @@ function findMatches({relevantOffersCollection, myOffers, userId}) {
     const potentialOffers = relevantOffersCollection[currency][oppositeAction(action)];
     _.forEach(potentialOffers, offer => {
       if (offer.userId !== userId && isMatching(myOffer, offer)) {
-        potentialMatches.push(offer)
+        potentialMatches.push({offer, myOffer})
       }
     })
   })
