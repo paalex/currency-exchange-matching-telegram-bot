@@ -1,5 +1,4 @@
 import Markup from "telegraf/markup";
-import Extra from "telegraf/extra";
 import WizardScene from "telegraf/scenes/wizard";
 import _ from 'lodash';
 import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch, acceptMatch} from "./firebaseHelper";

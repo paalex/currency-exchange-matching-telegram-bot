@@ -16,6 +16,7 @@ export const telegram = new Telegram(TELEGRAM_API_KEY); // required for initiati
 
 export function botInit(expressApp) {
   if (SERVER_URL) {
+    console.log('SERVER_URL',SERVER_URL)
     bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
     expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
   }
