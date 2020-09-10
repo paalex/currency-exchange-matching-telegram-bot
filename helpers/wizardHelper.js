@@ -113,30 +113,51 @@ export const welcomeWizard = new WizardScene(
     return ctx.scene.leave()
   })
 
-export const chooseCityWizard = new WizardScene(
-  "choose_city",
-  ctx => {
-    console.log('chooseCityWizard1')
-    // console.log('ctx',ctx)
-    ctx.reply(`В каком городе вы можете встретится?`,
-      citiesMenu
-    );
-    return ctx.wizard.next();
-  },
-  async ctx => {
-    console.log('chooseCityWizard2')
-    if (isNotValidCB(ctx)) return goHome(ctx);
-    const city = _.get(ctx.update, 'callback_query.data');
+export const mainMenuMiddleware = async (ctx, next) => {
+  const choice = _.get(ctx.update, 'message.text')
+  console.log('mainMenuMiddleware')
+  if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
+    // is menu click
     const userId = _.get(getUser(ctx),'id');
-    await updateCity({city, userId})
-    await ctx.reply(`Ок, ${getCityWord(city)} 🏡`, backToMainMenuKeyboard)
-    return ctx.wizard.next();
-  },
-  ctx => {
-    console.log('chooseCityWizard3')
-    goHome(ctx)
+    switch (choice) {
+      case LIST_OFFERS_WORD:
+        let offers;
+        if (userId) {
+          offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
+          const offersText = offers && offers.length > 0
+            ? readableOffers(offers, getUser(ctx).city || MINSK)
+            : "У вас нет открытых сделок 💰❌. \nВыберите 'Начать новый обмен' в меню"
+          await ctx.reply(`📝 Список ваших открытых сделок: \n${offersText || ''}`, backToMainMenuKeyboard)
+        }
+        return ctx.scene.leave()
+      case LIST_POTENTIAL_MATCHES_WORD:
+        return ctx.scene.enter('matching')
+      case SUBMIT_OFFER_WORD:
+        return ctx.scene.enter('offer')
+      case CHOOSE_CITY_WORD:
+        return ctx.scene.enter('choose_city')
+      case GET_NBRB_USD_WORD: // fall through.  same as ||
+      case GET_NBRB_EUR_WORD:
+        const currency = choice === GET_NBRB_USD_WORD ? USD : EUR;
+        let rate;
+        if (currency === USD) {
+          rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e.code));
+        } else if (currency === EUR) {
+          rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
+        }
+        const unavailableText = 'НБРБ не доступен';
+        const text = rate ? `${formatRate(rate)} ${currency}-BYN` : unavailableText
+        ctx.reply(text, backToMainMenuKeyboard)
+        return ctx.scene.leave();
+      default:
+        return ctx.scene.leave()
+    }
+  } else if (choice === MAIN_MENU) {
+    console.log("MAIN_MENU")
+    ctx.scene.enter('welcome')
   }
-)
+  return next()
+}
 
 export const offerWizard = new WizardScene(
   'offer',
@@ -269,10 +290,11 @@ export const matchingWizard = new WizardScene(
     if (selection === APPROVE_MATCH) {
       const warning = `⚠️За скупку, продажу или обмен валюты без лицензии или госрегистрации предусмотрена административная ответственность⚠️`;
       const advice = `💡Законный способ через обменный пункт: продавец валюты сдает ее в кассу, а покупатель приобретает сразу после него💡`;
-      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match)
-        + `\n Контакт: @${_.get(match,'username')} \n${warning} \n ${advice}`;
+      const text1 = `Вы подтвердили следующую сделку:\n\n` + readableOffer(match)
+        + `\n Контакт: @${_.get(match,'username')} \n\n${warning} \n ${advice}`;
       await ctx.reply(text1, backToMainMenuKeyboard);
-      const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `\n Контакт: @${_.get(user, 'username')}`
+      const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match)
+        + `\n Контакт: @${_.get(user, 'username')}`
       await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
       acceptMatch({match, user}).catch(e => console.log('failed acceptMatch', e))
       sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
@@ -287,48 +309,29 @@ export const matchingWizard = new WizardScene(
   }
 )
 
-export const mainMenuMiddleware = async (ctx, next) => {
-  const choice = _.get(ctx.update, 'message.text')
-  console.log('mainMenuMiddleware')
-  if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
-    // is menu click
+export const chooseCityWizard = new WizardScene(
+  "choose_city",
+  ctx => {
+    console.log('chooseCityWizard1')
+    // console.log('ctx',ctx)
+    ctx.reply(`В каком городе вы можете встретится?`,
+      citiesMenu
+    );
+    return ctx.wizard.next();
+  },
+  async ctx => {
+    console.log('chooseCityWizard2')
+    if (isNotValidCB(ctx)) return goHome(ctx);
+    const city = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
-    switch (choice) {
-      case LIST_OFFERS_WORD:
-        let offers;
-        if (userId) {
-          offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
-          const offersText = offers && offers.length > 0
-            ? readableOffers(offers, getUser(ctx).city || MINSK)
-            : "У вас нет открытых сделок 💰❌. \nВыберите 'Начать новый обмен' в меню"
-          await ctx.reply(`📝 Список ваших открытых сделок: \n${offersText || ''}`, backToMainMenuKeyboard)
-        }
-        return ctx.scene.leave()
-      case LIST_POTENTIAL_MATCHES_WORD:
-        return ctx.scene.enter('matching')
-      case SUBMIT_OFFER_WORD:
-        return ctx.scene.enter('offer')
-      case CHOOSE_CITY_WORD:
-        return ctx.scene.enter('choose_city')
-      case GET_NBRB_USD_WORD: // fall through.  same as ||
-      case GET_NBRB_EUR_WORD:
-        const currency = choice === GET_NBRB_USD_WORD ? USD : EUR;
-        let rate;
-        if (currency === USD) {
-          rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e.code));
-        } else if (currency === EUR) {
-          rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
-        }
-        const unavailableText = 'НБРБ не доступен';
-        const text = rate ? `${formatRate(rate)} ${currency}-BYN` : unavailableText
-        ctx.reply(text, backToMainMenuKeyboard)
-        return ctx.scene.leave();
-      default:
-        return ctx.scene.leave()
-    }
-  } else if (choice === MAIN_MENU) {
-    console.log("MAIN_MENU")
-    ctx.scene.enter('welcome')
+    await updateCity({city, userId})
+    await ctx.reply(`Ок, ${getCityWord(city)} 🏡`, backToMainMenuKeyboard)
+    return ctx.wizard.next();
+  },
+  ctx => {
+    console.log('chooseCityWizard3')
+    goHome(ctx)
   }
-  return next()
-}
+)
+
+
