@@ -2,7 +2,7 @@ import Markup from "telegraf/markup";
 import Extra from "telegraf/extra";
 import WizardScene from "telegraf/scenes/wizard";
 import _ from 'lodash';
-import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch} from "./firebaseHelper";
+import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch, acceptMatch} from "./firebaseHelper";
 import {
   BUY,
   SELL,
@@ -73,7 +73,7 @@ const offersMenu = Markup.inlineKeyboard([
 ]).removeKeyboard().extra();
 
 const removeKeyboardMarkup = Markup.removeKeyboard().extra();
-const emptyKeyboard = Markup.keyboard([[]]);
+const emptyInlineKeyboard =  Markup.inlineKeyboard([ Markup.callbackButton(`dummy`, 'dummy', true) ]).extra();
 
 const generateMatchKeyboard = ({match, withBack}) => {
   const buttons = [[
@@ -271,9 +271,11 @@ export const matchingWizard = new WizardScene(
       const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `\n Контакт: @${_.get(match,'username')}`
       await ctx.reply(text1, backToMainMenuKeyboard);
       const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `\n Контакт: @${_.get(user, 'username')}`
+      await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
+      acceptMatch({match, user}).catch(e => console.log('failed acceptMatch', e))
       sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
     } else {
-      await ctx.editMessageText('➡️🗑', backToMainMenuKeyboard);
+      await ctx.editMessageText('➡️🗑', emptyInlineKeyboard);
       await rejectMatch({match, user}).catch(e => console.log('err rejecting a match', e))
     }
   },

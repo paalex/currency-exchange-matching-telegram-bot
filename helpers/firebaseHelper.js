@@ -143,8 +143,14 @@ async function fetchUser(userId) {
 
 export async function rejectMatch({match, user}) {
   const {action, city, currency, id} = match;
-  const {id: userId, username} = user;
   if (!match || !user) throw new Error('no match to save');
   const rejOfferPath = `${user.id}/rejectedOffers/${id}`;
   return usersRef.child(rejOfferPath).set({action, city, currency})
+}
+
+export async function acceptMatch({match, user}) {
+  const {action, city, currency, id} = match;
+  if (!match || !user) throw new Error('no match to save');
+  const approvedOfferPath = `${user.id}/acceptedOffers/${id}`;
+  return usersRef.child(approvedOfferPath).set({action, city, currency})
 }
