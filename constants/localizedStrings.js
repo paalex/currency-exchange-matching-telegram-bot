@@ -1,12 +1,16 @@
-const MINSK_WORD = "Минск";
-const GRODNO_WORD = "Гродно";
-const BOBRUYSK_WORD = "Бобруйск";
-const BARANOVICHI_WORD = "Барановичи";
+export const MINSK_WORD = "Минск";
+export const GRODNO_WORD = "Гродно";
+export const BOBRUYSK_WORD = "Бобруйск";
+export const BARANOVICHI_WORD = "Барановичи";
 
+export const BUY_USD_WORD = "купить USD";
+export const BUY_EUR_WORD = "купить EUR";
+export const SELL_USD_WORD = "продать USD";
+export const SELL_EUR_WORD = "продать EUR";
 
-const BUY_USD_WORD = "купить USD";
-const BUY_EUR_WORD = "купить EUR";
-const SELL_USD_WORD = "продать USD";
-const SELL_EUR_WORD = "продать EUR";
-
-export {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD, BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD}
+export const GET_NBRB_EUR_WORD = `Курс НБРБ EUR 🇪🇺`;
+export const GET_NBRB_USD_WORD = `Курс НБРБ USD 🇺🇸`;
+export const CHOOSE_CITY_WORD = `📍 Выбрать / Изменить город`;
+export const LIST_POTENTIAL_MATCHES_WORD = `🔍 Подобрать сделки для меня`;
+export const LIST_OFFERS_WORD = `📝 Мои открытые сделки`;
+export const SUBMIT_OFFER_WORD = '✍️ Начать новый обмен валюты';
