@@ -108,7 +108,7 @@ export const welcomeWizard = new WizardScene(
         "добавить в 'Настройки' => 'Имя пользователя'. Без имени пользователя я не смогу соединить вас с другими пользователями чтобы осуществить обмены")
     } else {
       await saveUser(user).catch(e => console.log('err saving user', e));
-      await ctx.reply("Что будем делать? 🐰")//, generateMainMenu);
+      await ctx.reply("Что будем делать? 🐰", generateMainMenu);
     }
     return ctx.scene.leave();
   })
