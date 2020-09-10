@@ -2,12 +2,17 @@ import Telegraf, {Telegram} from 'telegraf';
 import Stage from "telegraf/stage";
 import LocalSession from "telegraf-session-local";
 import {goHome} from '../helpers/telegramHelper';
-import {offerWizard, matchingWizard, welcomeWizard, chooseCityWizard} from "../helpers/wizardHelper"
+import {
+  offerWizard,
+  matchingWizard,
+  welcomeWizard,
+  chooseCityWizard,
+  mainMenuMiddleware,
+} from "../helpers/wizardHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
 export const bot = new Telegraf(TELEGRAM_API_KEY);
 export const telegram = new Telegram(TELEGRAM_API_KEY); // required for initiating a conversation
-const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityWizard]);
 
 export function botInit(expressApp) {
   if (SERVER_URL) {
@@ -17,7 +22,14 @@ export function botInit(expressApp) {
   // Scene registration
   bot.use((new LocalSession({database: '.data/telegraf_db.json'})).middleware())
   // bot.use(session());
+  const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityWizard]);
+  stage.use(mainMenuMiddleware);
   bot.use(stage.middleware());
+
+  bot.catch((err, ctx) => {
+    console.log(`Ooops, encountered an error for ${ctx.updateType}`, err)
+  })
+
   bot.start(async ctx => {
     goHome(ctx);
   });

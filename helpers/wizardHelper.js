@@ -1,13 +1,41 @@
 import Markup from "telegraf/markup";
+import Extra from "telegraf/extra";
 import WizardScene from "telegraf/scenes/wizard";
 import _ from 'lodash';
-import {storeOffer, listMyOffers, listPotentialMatches, updateCity} from "./firebaseHelper";
+import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch, acceptMatch} from "./firebaseHelper";
 import {
-  BUY, SELL, BYN, BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, REJECT_MATCH, APPROVE_MATCH, GET_NBRB_USD, GET_NBRB_EUR, USD, EUR,
-  MINSK, GRODNO, BOBRUYSK, BARANOVICHI, LIST_OFFERS, LIST_POTENTIAL_MATCHES, SUBMIT_OFFER, CHOOSE_CITY, MAIN_MENU
+  BUY,
+  SELL,
+  BYN,
+  BUY_USD,
+  BUY_EUR,
+  SELL_USD,
+  SELL_EUR,
+  REJECT_MATCH,
+  APPROVE_MATCH,
+  USD,
+  EUR,
+  MINSK,
+  GRODNO,
+  BOBRUYSK,
+  BARANOVICHI,
+  MAIN_MENU,
+  MAIN_MENU_OPTIONS
 } from '../constants/appEnums';
-import {MINSK_WORD, GRODNO_WORD, BOBRUYSK_WORD, BARANOVICHI_WORD,
-  BUY_USD_WORD, BUY_EUR_WORD, SELL_USD_WORD, SELL_EUR_WORD} from '../constants/localizedStrings'
+import {
+  MINSK_WORD,
+  GRODNO_WORD,
+  BOBRUYSK_WORD,
+  BARANOVICHI_WORD,
+  BUY_USD_WORD,
+  BUY_EUR_WORD,
+  SELL_USD_WORD,
+  SELL_EUR_WORD,
+  GET_NBRB_EUR_WORD,
+  GET_NBRB_USD_WORD,
+  CHOOSE_CITY_WORD,
+  LIST_POTENTIAL_MATCHES_WORD, LIST_OFFERS_WORD, SUBMIT_OFFER_WORD
+} from '../constants/localizedStrings'
 import {destructTransType, fetchNBRBRatesUSD, fetchNBRBRatesEUR, formatRate} from "./currencyHelper"
 import {getCityWord, getActionPhrase} from "./textHelper"
 import {
@@ -20,26 +48,18 @@ import {
   sendTgMsgByChatId
 } from "./telegramHelper"
 
-const generateMainMenu = (city) => Markup.inlineKeyboard([
+const generateMainMenu = (city) => Markup.keyboard([
+  [Markup.callbackButton(SUBMIT_OFFER_WORD)],
+  [Markup.callbackButton(LIST_OFFERS_WORD)],
+  [Markup.callbackButton(LIST_POTENTIAL_MATCHES_WORD)],
+  [Markup.callbackButton(CHOOSE_CITY_WORD)], //(${getCityWord(city) || getCityWord(MINSK)})
   [
-    Markup.callbackButton(`✍️ Начать новый обмен валюты`, SUBMIT_OFFER)
-  ],
-  [
-    Markup.callbackButton(`📝 Мои открытые сделки`, LIST_OFFERS)
-  ],
-  [
-    Markup.callbackButton(`🔍 Подобрать сделки для меня`, LIST_POTENTIAL_MATCHES)
-  ],
-  [
-    Markup.callbackButton(`📍 Выбрать / Изменить город`, CHOOSE_CITY) //(${getCityWord(city) || getCityWord(MINSK)})
-  ],
-  [
-    Markup.callbackButton(`Курс НБРБ USD 🇺🇸`, GET_NBRB_USD),
-    Markup.callbackButton(`Курс НБРБ EUR 🇪🇺`, GET_NBRB_EUR)
+    Markup.callbackButton(GET_NBRB_USD_WORD),
+    Markup.callbackButton(GET_NBRB_EUR_WORD)
   ]
-]).extra();
-const backToMainMenuButton = Markup.callbackButton("Главное меню ↩️", MAIN_MENU)
-const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton]).extra()
+]).oneTime().resize().extra();
+const backToMainMenuButton = Markup.callbackButton("Открыть меню ⬆️️", MAIN_MENU)
+const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton, ]).extra()
 
 const offersMenu = Markup.inlineKeyboard([
   [
@@ -50,7 +70,10 @@ const offersMenu = Markup.inlineKeyboard([
     Markup.callbackButton(`${SELL_USD_WORD} $`, SELL_USD),
     Markup.callbackButton(`${SELL_EUR_WORD} €`, SELL_EUR)
   ]
-]).extra();
+]).removeKeyboard().extra();
+
+const removeKeyboardMarkup = Markup.removeKeyboard().extra();
+const emptyInlineKeyboard =  Markup.inlineKeyboard([ Markup.callbackButton(`dummy`, 'dummy', true) ]).extra();
 
 const generateMatchKeyboard = ({match, withBack}) => {
   const buttons = [[
@@ -58,7 +81,7 @@ const generateMatchKeyboard = ({match, withBack}) => {
     Markup.callbackButton(`❌`, JSON.stringify({selection: REJECT_MATCH, offerId: match.id}))
     ]]
   if (withBack) buttons.push([backToMainMenuButton])
-  return Markup.inlineKeyboard(buttons).extra();
+  return Markup.inlineKeyboard(buttons).removeKeyboard().extra();
 }
 
 const citiesMenu = Markup.inlineKeyboard([
@@ -70,7 +93,7 @@ const citiesMenu = Markup.inlineKeyboard([
     Markup.callbackButton(BOBRUYSK_WORD, BOBRUYSK),
     Markup.callbackButton(BARANOVICHI_WORD, BARANOVICHI),
   ]
-]).extra();
+]).removeKeyboard().extra();
 
 const getUser = (ctx) => {
  return _.get(ctx.update, 'callback_query.from') || _.get(ctx.update, 'message.from');
@@ -84,51 +107,11 @@ export const welcomeWizard = new WizardScene(
     if (!user.username) {
       ctx.reply("В вашем профиле телеграма не хватает имени пользователя. Имя пользователя можно легко " +
         "добавить в 'Настройки' => 'Имя пользователя'. Без имени пользователя я не смогу соединить вас с другими пользователями чтобы осуществить обмены")
-      return ctx.scene.leave()
+    } else {
+      await saveUser(ctx).catch(e => console.log('err saving user', e)).finally();
+      ctx.reply("Что будем делать? 🐰", generateMainMenu());
     }
-    await saveUser(ctx).catch(e => console.log('err saving user', e)).finally();
-    ctx.reply("Привет. Что будем делать? 🐰", generateMainMenu());
-    return ctx.wizard.next();
-  },
-  async ctx => {
-    console.log('welcomeWizard2')
-    const choice = _.get(ctx.update, 'callback_query.data');
-    const userId = _.get(getUser(ctx),'id');
-    switch (choice) {
-      case LIST_OFFERS:
-        let offers;
-        if (userId) {
-          offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
-          const offersText = offers && offers.length > 0 ? readableOffers(offers, getUser(ctx).city || MINSK) : 'У вас нет ставок 💰'
-          await ctx.reply(`📝 Список ваших предложений: \n${offersText || ''}`, backToMainMenuKeyboard)
-          return ctx.wizard.next();
-        }
-        return ctx.scene.reenter()
-      case LIST_POTENTIAL_MATCHES:
-        return ctx.scene.enter('matching')
-      case SUBMIT_OFFER:
-        return ctx.scene.enter('offer')
-      case CHOOSE_CITY:
-        return ctx.scene.enter('choose_city')
-      case GET_NBRB_USD: // fall through.  same as ||
-      case GET_NBRB_EUR:
-        const currency = choice === GET_NBRB_USD ? USD : EUR;
-        let rate;
-        if (currency === USD) {
-          rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e));
-        } else if (currency === EUR) {
-          rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
-        }
-        const unavailableText = 'НБРБ не доступен';
-        const text = rate ? `${formatRate(rate)} ${currency}-BYN` : unavailableText
-        ctx.reply(text, backToMainMenuKeyboard)
-        return ctx.wizard.next();
-    }
-    return ctx.scene.reenter()
-  },
-  ctx => {
-    console.log('welcomeWizard3')
-    return ctx.scene.reenter()
+    return ctx.scene.leave();
   })
 
 export const chooseCityWizard = new WizardScene(
@@ -147,68 +130,12 @@ export const chooseCityWizard = new WizardScene(
     const city = _.get(ctx.update, 'callback_query.data');
     const userId = _.get(getUser(ctx),'id');
     await updateCity({city, userId})
-    await ctx.reply(`Ок, ${getCityWord(city)}`, backToMainMenuKeyboard)
+    await ctx.reply(`Ок, ${getCityWord(city)} 🏡`, backToMainMenuKeyboard)
     return ctx.wizard.next();
   },
   ctx => {
     console.log('chooseCityWizard3')
     goHome(ctx)
-  }
-)
-
-export const matchingWizard = new WizardScene(
-  "matching",
-  async ctx => {
-    console.log('matchingWizard1')
-    const {matches} = await listPotentialMatches(getUser(ctx).id).catch(e => {
-      console.log('err in listPotentialMatches', e)
-      return goHome(ctx)
-    });
-    ctx.wizard.state.matches = matches;
-    const hasMatches = matches && matches.length > 0;
-    if (hasMatches) {
-      const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
-      await ctx.reply(`🤝 Список возможных сделок:`);
-      await asyncForEach(matchesToDisplay, async (match, idx, arr) => {
-        await ctx.reply(`${readableOffer(match) || 'Уже недоступен'}`, generateMatchKeyboard({match, withBack: idx === arr.length - 1}))
-      });
-    } else {
-      ctx.reply('Для вас пока нет подходящих сделок 💰❌', backToMainMenuKeyboard);
-    }
-    return ctx.wizard.next()
-  },
-  async ctx => {
-    console.log('matchingWizard2')
-    if (isNotValidCB(ctx)) return goHome(ctx);
-    const choice = _.get(ctx.update, 'callback_query.data');
-    let selection, offerId;
-    try {
-      const res = JSON.parse(choice) || {};
-      selection = res.selection;
-      offerId = res.offerId;
-    } catch (e) {
-      console.log('err parsing JSON in matchingWizard1')
-      return goHome(ctx)
-    }
-    if (!selection || !offerId) {
-      await ctx.reply('Сделка уже недоступна', backToMainMenuKeyboard);
-      return
-    }
-    const {matches} = ctx.wizard.state;
-    const match = _.find(matches, m => m.id === offerId);
-    const user = getUser(ctx);
-    if (selection === APPROVE_MATCH) {
-      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `, контакт: @${_.get(match,'username')}`
-      await ctx.reply(text1, backToMainMenuKeyboard);
-      const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `, контакт: @${_.get(user, 'username')}`
-      sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
-    } else {
-      await ctx.reply('Ок', backToMainMenuKeyboard);
-    }
-  },
-  ctx => {
-    console.log('matchingWizard3')
-    return goHome(ctx)
   }
 )
 
@@ -257,7 +184,7 @@ export const offerWizard = new WizardScene(
     console.log('offerWizard4')
     if (isCBQ(ctx)) return goHome(ctx);
     if (isNotValidNumber(ctx)) {
-      ctx.reply('Введите корректный курс. Например 3.4 ')
+      ctx.reply('Введите корректный курс. Например 3.41 ')
       return
     }
     ctx.wizard.state.rate = ctx.message.text;
@@ -297,3 +224,107 @@ export const offerWizard = new WizardScene(
     goHome(ctx)
   }
 );
+
+export const matchingWizard = new WizardScene(
+  "matching",
+  async ctx => {
+    console.log('matchingWizard1')
+    await ctx.reply(`🔍...`);
+    const {matches} = await listPotentialMatches(getUser(ctx).id).catch(e => {
+      console.log('err in listPotentialMatches', e)
+      return goHome(ctx)
+    });
+    ctx.wizard.state.matches = matches;
+    const hasMatches = matches && matches.length > 0;
+    if (hasMatches) {
+      const matchesToDisplay = matches.length <= 5 ? matches : _.slice(matches,0,5);
+      await ctx.reply(`🤝 Список возможных сделок:`);
+      await asyncForEach(matchesToDisplay, async (match, idx, arr) => {
+        await ctx.reply(`${readableOffer(match) || 'Уже недоступен'}`, generateMatchKeyboard({match, withBack: idx === arr.length - 1}))
+      });
+    } else {
+      ctx.reply('Для вас пока нет подходящих сделок 💰❌', backToMainMenuKeyboard);
+    }
+    return ctx.wizard.next()
+  },
+  async ctx => {
+    console.log('matchingWizard2')
+    if (isNotValidCB(ctx)) return goHome(ctx);
+    const choice = _.get(ctx.update, 'callback_query.data');
+    let selection, offerId;
+    try {
+      const res = JSON.parse(choice) || {};
+      selection = res.selection;
+      offerId = res.offerId;
+    } catch (e) {
+      console.log('err parsing JSON in matchingWizard1')
+      return goHome(ctx)
+    }
+    if (!selection || !offerId) {
+      await ctx.reply('Сделка уже недоступна', backToMainMenuKeyboard);
+      return
+    }
+    const {matches} = ctx.wizard.state;
+    const match = _.find(matches, m => m.id === offerId);
+    const user = getUser(ctx);
+    if (selection === APPROVE_MATCH) {
+      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `\n Контакт: @${_.get(match,'username')}`
+      await ctx.reply(text1, backToMainMenuKeyboard);
+      const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `\n Контакт: @${_.get(user, 'username')}`
+      await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
+      acceptMatch({match, user}).catch(e => console.log('failed acceptMatch', e))
+      sendTgMsgByChatId({chatId: match.userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
+    } else {
+      await ctx.editMessageText('➡️🗑', emptyInlineKeyboard);
+      await rejectMatch({match, user}).catch(e => console.log('err rejecting a match', e))
+    }
+  },
+  ctx => {
+    console.log('matchingWizard3')
+    return goHome(ctx)
+  }
+)
+
+export const mainMenuMiddleware = async (ctx, next) => {
+  const choice = _.get(ctx.update, 'message.text')
+  if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
+    // is menu click
+    console.log('is menu option', choice)
+    const userId = _.get(getUser(ctx),'id');
+    switch (choice) {
+      case LIST_OFFERS_WORD:
+        let offers;
+        if (userId) {
+          offers = await listMyOffers(userId).catch(e => console.log('listMyOffers', e));
+          const offersText = offers && offers.length > 0
+            ? readableOffers(offers, getUser(ctx).city || MINSK)
+            : "У вас нет открытых сделок 💰❌. \nВыберите 'Начать новый обмен' в меню"
+          await ctx.reply(`📝 Список ваших открытых сделок: \n${offersText || ''}`, backToMainMenuKeyboard)
+        }
+        return ctx.scene.leave()
+      case LIST_POTENTIAL_MATCHES_WORD:
+        return ctx.scene.enter('matching')
+      case SUBMIT_OFFER_WORD:
+        return ctx.scene.enter('offer')
+      case CHOOSE_CITY_WORD:
+        return ctx.scene.enter('choose_city')
+      case GET_NBRB_USD_WORD: // fall through.  same as ||
+      case GET_NBRB_EUR_WORD:
+        const currency = choice === GET_NBRB_USD_WORD ? USD : EUR;
+        let rate;
+        if (currency === USD) {
+          rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e));
+        } else if (currency === EUR) {
+          rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
+        }
+        const unavailableText = 'НБРБ не доступен';
+        const text = rate ? `${formatRate(rate)} ${currency}-BYN` : unavailableText
+        ctx.reply(text, backToMainMenuKeyboard)
+        return ctx.scene.leave();
+      default:
+        return ctx.scene.leave()
+    }
+  } else {
+    next()
+  }
+}

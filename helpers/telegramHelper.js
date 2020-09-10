@@ -1,11 +1,12 @@
 import _ from 'lodash';
 import {storeUser} from "./firebaseHelper";
 import {
-  BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, MAIN_MENU
+  BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, MAIN_MENU, SELL
 } from '../constants/appEnums';
 import {formatRate} from "./currencyHelper"
 import {getCityWord} from "./textHelper"
 import {telegram} from "../services/telegramService"
+import {BUYING_WORD, SELLING_WORD} from "../constants/localizedStrings"
 
 function isTransactionType(p) {
   return p === BUY_USD || p === BUY_EUR || p === SELL_USD || p === SELL_EUR
@@ -36,7 +37,8 @@ export async function saveUser(ctx) {
 export function readableOffers(offers, city) {
   return _.reduce(offers, (acc, offer) => {
     const { action, amount, currency, rate } = offer;
-    const text = `💰 ${action} ${amount} ${currency} @${formatRate(rate)} 💰` + '\n';
+    const actionWord = action === SELL ? SELLING_WORD : BUYING_WORD;
+    const text = `💰 ${actionWord} ${amount} ${currency} @${formatRate(rate)} 💰` + '\n';
     return acc + text
   }, "")
     + (city ? `\n`+ `в г. ${getCityWord(city)}` : '')
@@ -44,7 +46,8 @@ export function readableOffers(offers, city) {
 
 export function readableOffer(offer) {
   const { action, amount, currency, rate, city } = offer;
-  return `💰 ${action} ${amount} ${currency} @${formatRate(rate)}, ${getCityWord(city)}`;
+  const actionWord = action === SELL ? SELLING_WORD : BUYING_WORD;
+  return `💰 ${actionWord} ${amount} ${currency} @${formatRate(rate)}, ${getCityWord(city)}`;
 }
 
 export async function asyncForEach(array, callback) {
