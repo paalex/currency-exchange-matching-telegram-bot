@@ -25,9 +25,7 @@ function processTelegramUser(user) {
 
 const getText = (ctx) => _.get(ctx, 'update.message.text')
 
-export async function saveUser(ctx) {
-  const user = _.get(ctx, 'update.message.from') || _.get(ctx, 'update.callback_query.from');
-  // console.log('saveUser',user);
+export async function saveUser(user) {
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
     return storeUser(processedUser);

@@ -11,11 +11,17 @@ import {
 } from "../helpers/wizardHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
-export const bot = new Telegraf(TELEGRAM_API_KEY);
+
+const isPolling = !SERVER_URL;
+
+export const bot = new Telegraf(TELEGRAM_API_KEY,{
+  telegram: { webhookReply: isPolling }
+});
 export const telegram = new Telegram(TELEGRAM_API_KEY); // required for initiating a conversation
 
 export function botInit(expressApp) {
   if (SERVER_URL) {
+    console.log('SERVER_URL',SERVER_URL)
     bot.telegram.setWebhook(`${SERVER_URL}/bot${TELEGRAM_API_KEY}`).catch(e => console.warn('telegram.setWebhook err', e));
     expressApp.use(bot.webhookCallback(`/bot${TELEGRAM_API_KEY}`));
   }

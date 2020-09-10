@@ -1,5 +1,4 @@
 import Markup from "telegraf/markup";
-import Extra from "telegraf/extra";
 import WizardScene from "telegraf/scenes/wizard";
 import _ from 'lodash';
 import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch, acceptMatch} from "./firebaseHelper";
@@ -48,7 +47,7 @@ import {
   sendTgMsgByChatId
 } from "./telegramHelper"
 
-const generateMainMenu = (city) => Markup.keyboard([
+const generateMainMenu = Markup.keyboard([
   [Markup.callbackButton(SUBMIT_OFFER_WORD)],
   [Markup.callbackButton(LIST_OFFERS_WORD)],
   [Markup.callbackButton(LIST_POTENTIAL_MATCHES_WORD)],
@@ -59,7 +58,7 @@ const generateMainMenu = (city) => Markup.keyboard([
   ]
 ]).oneTime().resize().extra();
 const backToMainMenuButton = Markup.callbackButton("Открыть меню ⬆️️", MAIN_MENU)
-const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton, ]).extra()
+const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton]).extra()
 
 const offersMenu = Markup.inlineKeyboard([
   [
@@ -105,13 +104,12 @@ export const welcomeWizard = new WizardScene(
     console.log('welcomeWizard1')
     const user = getUser(ctx);
     if (!user.username) {
-      ctx.reply("В вашем профиле телеграма не хватает имени пользователя. Имя пользователя можно легко " +
+      await ctx.reply("В вашем профиле телеграма не хватает имени пользователя. Имя пользователя можно легко " +
         "добавить в 'Настройки' => 'Имя пользователя'. Без имени пользователя я не смогу соединить вас с другими пользователями чтобы осуществить обмены")
     } else {
-      await saveUser(ctx).catch(e => console.log('err saving user', e)).finally();
-      ctx.reply("Что будем делать? 🐰", generateMainMenu());
+      await saveUser(user).catch(e => console.log('err saving user', e));
+      await ctx.reply("Что будем делать? 🐰", generateMainMenu);
     }
-    return ctx.scene.leave();
   })
 
 export const chooseCityWizard = new WizardScene(
@@ -287,6 +285,7 @@ export const matchingWizard = new WizardScene(
 
 export const mainMenuMiddleware = async (ctx, next) => {
   const choice = _.get(ctx.update, 'message.text')
+  console.log('mainMenuMiddleware',ctx.update)
   if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
     // is menu click
     console.log('is menu option', choice)
