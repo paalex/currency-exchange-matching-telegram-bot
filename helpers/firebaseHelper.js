@@ -42,7 +42,7 @@ export async function storeUser(user) {
 export async function storeOffer(user, offer) {
   const {action, city, currency} = offer;
   const {id: userId, username} = user;
-  if (!user) throw new Error('no user to save');
+  if (!user) throw new Error('no offer to save');
   const offerPath = `offers/${city}/${currency}/${action}`;
   const userOffersPath = `users/${userId}/offers`;
   const offerUid = db.child(offerPath).push().key;
@@ -133,10 +133,18 @@ function findMatches({relevantOffersCollection, myOffers, userId}) {
       }
     })
   })
-  return potentialMatches
+  return _.uniqBy(potentialMatches, 'id');
 }
 
 async function fetchUser(userId) {
   const userSnap = await usersRef.child(userId).once('value');
   return userSnap.val();
+}
+
+export async function rejectMatch({match, user}) {
+  const {action, city, currency, id} = match;
+  const {id: userId, username} = user;
+  if (!match || !user) throw new Error('no match to save');
+  const rejOfferPath = `${user.id}/rejectedOffers/${id}`;
+  return usersRef.child(rejOfferPath).set({action, city, currency})
 }

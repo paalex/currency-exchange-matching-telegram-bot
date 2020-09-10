@@ -8,7 +8,6 @@ import {
   welcomeWizard,
   chooseCityWizard,
   mainMenuMiddleware,
-  currencyWizard
 } from "../helpers/wizardHelper"
 
 const {SERVER_URL, TELEGRAM_API_KEY} = process.env;
@@ -23,9 +22,8 @@ export function botInit(expressApp) {
   // Scene registration
   bot.use((new LocalSession({database: '.data/telegraf_db.json'})).middleware())
   // bot.use(session());
-  const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityWizard, currencyWizard]);
-
-  bot.use(mainMenuMiddleware)
+  const stage = new Stage([offerWizard, matchingWizard, welcomeWizard, chooseCityWizard]);
+  stage.use(mainMenuMiddleware);
   bot.use(stage.middleware());
 
   bot.catch((err, ctx) => {

@@ -8,9 +8,12 @@ export const BUY_EUR_WORD = "купить EUR";
 export const SELL_USD_WORD = "продать USD";
 export const SELL_EUR_WORD = "продать EUR";
 
-export const GET_NBRB_EUR_WORD = `Курс НБРБ EUR 🇪🇺`;
-export const GET_NBRB_USD_WORD = `Курс НБРБ USD 🇺🇸`;
-export const CHOOSE_CITY_WORD = `📍 Выбрать / Изменить город`;
-export const LIST_POTENTIAL_MATCHES_WORD = `🔍 Подобрать сделки для меня`;
-export const LIST_OFFERS_WORD = `📝 Мои открытые сделки`;
+export const SELLING_WORD = "Продаю";
+export const BUYING_WORD = "Покупаю";
+
 export const SUBMIT_OFFER_WORD = '✍️ Начать новый обмен валюты';
+export const LIST_OFFERS_WORD = `📝 Мои открытые сделки`;
+export const LIST_POTENTIAL_MATCHES_WORD = `🔍 Подобрать сделки для меня`;
+export const CHOOSE_CITY_WORD = `📍 Выбрать / Изменить город`;
+export const GET_NBRB_USD_WORD = `Курс НБРБ USD 🇺🇸`;
+export const GET_NBRB_EUR_WORD = `Курс НБРБ EUR 🇪🇺`;
