@@ -56,7 +56,7 @@ const generateMainMenu = Markup.keyboard([
     Markup.callbackButton(GET_NBRB_USD_WORD),
     Markup.callbackButton(GET_NBRB_EUR_WORD)
   ]
-]).oneTime().resize().extra();
+]).oneTime().extra();
 const backToMainMenuButton = Markup.callbackButton("Открыть меню ⬆️️", MAIN_MENU)
 const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton]).extra()
 
@@ -69,7 +69,7 @@ const offersMenu = Markup.inlineKeyboard([
     Markup.callbackButton(`${SELL_USD_WORD} $`, SELL_USD),
     Markup.callbackButton(`${SELL_EUR_WORD} €`, SELL_EUR)
   ]
-]).removeKeyboard().extra();
+]).extra();
 
 const removeKeyboardMarkup = Markup.removeKeyboard().extra();
 const emptyInlineKeyboard =  Markup.inlineKeyboard([ Markup.callbackButton(`dummy`, 'dummy', true) ]).extra();
@@ -80,7 +80,7 @@ const generateMatchKeyboard = ({match, withBack}) => {
     Markup.callbackButton(`❌`, JSON.stringify({selection: REJECT_MATCH, offerId: match.id}))
     ]]
   if (withBack) buttons.push([backToMainMenuButton])
-  return Markup.inlineKeyboard(buttons).removeKeyboard().extra();
+  return Markup.inlineKeyboard(buttons).extra();
 }
 
 const citiesMenu = Markup.inlineKeyboard([
@@ -92,7 +92,7 @@ const citiesMenu = Markup.inlineKeyboard([
     Markup.callbackButton(BOBRUYSK_WORD, BOBRUYSK),
     Markup.callbackButton(BARANOVICHI_WORD, BARANOVICHI),
   ]
-]).removeKeyboard().extra();
+]).extra();
 
 const getUser = (ctx) => {
  return _.get(ctx.update, 'callback_query.from') || _.get(ctx.update, 'message.from');
@@ -267,7 +267,10 @@ export const matchingWizard = new WizardScene(
     const match = _.find(matches, m => m.id === offerId);
     const user = getUser(ctx);
     if (selection === APPROVE_MATCH) {
-      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match) + `\n Контакт: @${_.get(match,'username')}`
+      const warning = `⚠️За скупку, продажу или обмен валюты без лицензии или госрегистрации предусмотрена административная ответственность⚠️`;
+      const advice = `💡Законный способ через обменный пункт: продавец валюты сдает ее в кассу, а покупатель приобретает сразу после него💡`;
+      const text1 = `Вы подтвердили следующую сделку:\n` + readableOffer(match)
+        + `\n Контакт: @${_.get(match,'username')} \n${warning} \n ${advice}`;
       await ctx.reply(text1, backToMainMenuKeyboard);
       const text2 = `🎉 Я нашел для вас покупателя:\n` + readableOffer(match) + `\n Контакт: @${_.get(user, 'username')}`
       await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
@@ -323,7 +326,9 @@ export const mainMenuMiddleware = async (ctx, next) => {
       default:
         return ctx.scene.leave()
     }
-  } else {
-    next()
+  } else if (choice === MAIN_MENU) {
+    console.log("MAIN_MENU")
+    ctx.scene.enter('welcome')
   }
+  return next()
 }
