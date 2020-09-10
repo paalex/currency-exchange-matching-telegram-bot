@@ -58,7 +58,7 @@ const generateMainMenu = Markup.keyboard([
   ]
 ]).oneTime().resize().extra();
 const backToMainMenuButton = Markup.callbackButton("Открыть меню ⬆️️", MAIN_MENU)
-const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton, ]).extra()
+const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton]).extra()
 
 const offersMenu = Markup.inlineKeyboard([
   [
