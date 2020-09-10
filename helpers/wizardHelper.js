@@ -166,7 +166,7 @@ export const chooseCityWizard = new WizardScene(
     console.log('chooseCityWizard1')
     // console.log('ctx',ctx)
     ctx.reply(`В каком городе вы можете встретится?`,
-      citiesMenu, {hide_}
+      citiesMenu
     );
     return ctx.wizard.next();
   },
