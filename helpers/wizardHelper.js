@@ -209,11 +209,10 @@ export const offerWizard = new WizardScene(
       storeOffer(user, offer).catch(e => console.warn('err in storeOffer', e))
       const partnerWord = action === SELL ? 'покупателя' : 'продавца';
       const actionWord = action === SELL ? 'продать' : 'купить';
-      ctx.reply(
+      await ctx.reply(
         `Итак, вы готовы ${actionWord}:\n`
-        + `${amount} ${currency} по курсу ${formatRate(rate)} ${currency}-${BYN} в городе ${cityWord}.\n\n`
-        + `Как только найду вам ${partnerWord}, сообщу 🐰`, backToMainMenuKeyboard);
-      return ctx.wizard.next();
+        + `${amount} ${currency} по курсу ${formatRate(rate)} ${currency}-${BYN} в городе ${cityWord}.\n\n`);
+      return ctx.scene.enter("matching");
     }
     ctx.reply(`Что-то не так, давай начнем с начало`)
     return ctx.scene.reenter()
@@ -242,7 +241,8 @@ export const matchingWizard = new WizardScene(
         await ctx.reply(`${readableOffer(match) || 'Уже недоступен'}`, generateMatchKeyboard({match, withBack: idx === arr.length - 1}))
       });
     } else {
-      ctx.reply('Для вас пока нет подходящих сделок 💰❌', backToMainMenuKeyboard);
+      await ctx.reply('Для вас пока нет подходящих сделок 💰❌ \nКак только найду, сообщу 🐰', backToMainMenuKeyboard);
+      return ctx.scene.leave()
     }
     return ctx.wizard.next()
   },
