@@ -287,6 +287,7 @@ export const matchingWizard = new WizardScene(
 
 export const mainMenuMiddleware = async (ctx, next) => {
   const choice = _.get(ctx.update, 'message.text')
+  console.log('mainMenuMiddleware',ctx.update)
   if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
     // is menu click
     console.log('is menu option', choice)
