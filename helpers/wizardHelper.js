@@ -110,6 +110,7 @@ export const welcomeWizard = new WizardScene(
       await saveUser(user).catch(e => console.log('err saving user', e));
       await ctx.reply("Что будем делать? 🐰", generateMainMenu);
     }
+    return ctx.scene.leave()
   })
 
 export const chooseCityWizard = new WizardScene(
@@ -285,10 +286,9 @@ export const matchingWizard = new WizardScene(
 
 export const mainMenuMiddleware = async (ctx, next) => {
   const choice = _.get(ctx.update, 'message.text')
-  console.log('mainMenuMiddleware',ctx.update)
+  console.log('mainMenuMiddleware')
   if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
     // is menu click
-    console.log('is menu option', choice)
     const userId = _.get(getUser(ctx),'id');
     switch (choice) {
       case LIST_OFFERS_WORD:
@@ -312,7 +312,7 @@ export const mainMenuMiddleware = async (ctx, next) => {
         const currency = choice === GET_NBRB_USD_WORD ? USD : EUR;
         let rate;
         if (currency === USD) {
-          rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e));
+          rate = await fetchNBRBRatesUSD().catch(e => console.log('err fetchNBRBRatesUSD', e.code));
         } else if (currency === EUR) {
           rate = await fetchNBRBRatesEUR().catch(e => console.log('err fetchNBRBRatesEUR', e));
         }
