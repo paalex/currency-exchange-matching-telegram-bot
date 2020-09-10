@@ -36,34 +36,12 @@ var offersRef = db.child("offers");
 export async function storeUser(user) {
   if (!user) throw new Error('no user to save');
   const userRef = usersRef.child(user.id);
-  const snapshot = await userRef.once('value');
-  console.log(snapshot.val());
-  return new Promise((res, rej) => {
-    if (!snapshot.val()) {
-      return userRef.set(user, function(error) {
-        if (error) {
-          console.log("User could not be saved." + error);
-          rej(error)
-        } else {
-          console.log("User saved successfully.");
-        }
-      });
-    } else {
-      return userRef.update({...user}, function(error) {
-        if (error) {
-          console.log("User could not be saved." + error);
-          rej(error)
-        } else {
-          console.log("User updated successfully.");
-        }
-      });
-    }
-  })
+  return userRef.update(user);
 }
 
 export async function storeOffer(user, offer) {
   const {action, city, currency} = offer;
-  const {id: userId} = user;
+  const {id: userId, username} = user;
   if (!user) throw new Error('no user to save');
   const offerPath = `offers/${city}/${currency}/${action}`;
   const userOffersPath = `users/${userId}/offers`;
@@ -72,7 +50,7 @@ export async function storeOffer(user, offer) {
   const offerPathWithUid = `${offerPath}/${offerUid}`;
   return new Promise((res, rej) => {
     db.update({
-      [offerPathWithUid]: {...offer, id: offerUid, userId},
+      [offerPathWithUid]: {...offer, id: offerUid, userId, username},
       [userOfferPath]: {city, action, currency}
     },function(error) {
       if (error) {
@@ -107,9 +85,9 @@ async function fetchOffer(offer) {
 export async function listMyOffers(userId) {
   const myOffersPath = `${userId}/offers`;
   const myOffersRef = usersRef.child(myOffersPath);
-  const snapshot = await myOffersRef.once('value');
-  const userOffers = parseUserOffers(snapshot.val());
-  const promises = _.map(userOffers, async userOffer => await fetchOffer(userOffer))
+  const userOffers = (await myOffersRef.once('value')).val();
+  const parsedUserOffers = parseUserOffers(userOffers);
+  const promises = _.map(parsedUserOffers, async userOffer => await fetchOffer(userOffer))
   return promises && promises.length > 0 ? await Promise.all(promises) : []
 }
 
@@ -119,11 +97,11 @@ async function fetchCurrencyOffers({city, currency, action}) {
   return snap.val()
 }
 
-export async function listPotentialMatches(user) {
-  const {id: userId} = user;
+export async function listPotentialMatches(userId) {
   const myOffers = await listMyOffers(userId);
-  if (myOffers) {
-    const city = user.city || myOffers[0].city || MINSK;
+  const fbUser = await fetchUser(userId)
+  if (Array.isArray(myOffers) && myOffers.length > 0) {
+    const city = fbUser.city || myOffers[0].city || MINSK;
     const desiredTransactionTypes = _.reduce(myOffers, (acc, offer) => {
       const {currency, action} = offer;
       const transType = getTransType({currency, action: oppositeAction(action)});
@@ -139,19 +117,9 @@ export async function listPotentialMatches(user) {
       return {...acc, ...currencyOffers }
     },{})
 
-    return findMatches({relevantOffersCollection, myOffers, userId});
+    return {matches: findMatches({relevantOffersCollection, myOffers, userId}), city};
   }
-  return []
-  // const cities = _.reduce(myOffers, (acc, offer) => {
-  //   const {city} = offer;
-  //   return acc[city] ? acc : {...acc, [city]: city}
-  // }, {})
-  // const myOffersPath = `${userId}/offers`;
-  // const myOffersRef = usersRef.child(myOffersPath);
-  // const snapshot = await myOffersRef.once('value');
-  // const userOffers = parseUserOffers(snapshot.val());
-  // const promises = _.map(userOffers, async userOffer => await fetchOffer(userOffer))
-  // return await Promise.all(promises);
+  return {matches: []}
 }
 
 function findMatches({relevantOffersCollection, myOffers, userId}) {
@@ -166,4 +134,9 @@ function findMatches({relevantOffersCollection, myOffers, userId}) {
     })
   })
   return potentialMatches
+}
+
+async function fetchUser(userId) {
+  const userSnap = await usersRef.child(userId).once('value');
+  return userSnap.val();
 }

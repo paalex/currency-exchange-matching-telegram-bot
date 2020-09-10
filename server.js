@@ -4,7 +4,7 @@
 // we've started you off with Express (https://expressjs.com/)
 // but feel free to use whatever libraries or frameworks you'd like through `package.json`.
 import express from "express";
-import { botInit } from "./helpers/telegramHelper";
+import { botInit } from "./services/telegramService";
 import {config as dotenv_config} from "dotenv"
 dotenv_config()
 

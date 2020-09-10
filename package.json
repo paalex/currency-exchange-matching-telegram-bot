@@ -10,6 +10,7 @@
     "start": "babel-node server.js"
   },
   "dependencies": {
+    "axios": "^0.20.0",
     "babel-cli": "*",
     "babel-core": "*",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
@@ -41,5 +42,8 @@
     "plugins": [
       "babel-plugin-transform-object-rest-spread"
     ]
+  },
+  "devDependencies": {
+    "@firebase/app": "^0.6.10"
   }
 }
