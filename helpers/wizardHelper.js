@@ -285,7 +285,6 @@ export const matchingWizard = new WizardScene(
       await ctx.reply('Сделка уже недоступна', backToMainMenuKeyboard);
       return
     }
-    _.debounce()
     const {matches} = ctx.wizard.state;
     const match = _.find(matches, m => m.offer.id === offerId);
     const user = getUser(ctx);
