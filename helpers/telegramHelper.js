@@ -58,6 +58,10 @@ export async function sendTgMsgByChatId({chatId, message}) {
   await telegram.sendMessage(chatId, message);
 }
 
+export async function sendTgMsgByChannelName({name, message}) {
+  await telegram.sendMessage(`@${name}`, message);
+}
+
 export const goHome = (ctx) => ctx.scene.enter("welcome")
 
 export const isNotValidCB = (ctx) => {

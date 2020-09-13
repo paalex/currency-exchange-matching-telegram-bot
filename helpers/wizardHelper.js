@@ -1,6 +1,7 @@
 import Markup from "telegraf/markup";
 import WizardScene from "telegraf/scenes/wizard";
 import _ from 'lodash';
+import {config as dotenv_config} from "dotenv"
 import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch, acceptMatch} from "./firebaseHelper";
 import {
   BUY,
@@ -43,9 +44,12 @@ import {
   isNotValidCB, isNotValidNumber,
   readableOffer,
   readableOffers,
-  saveUser,
+  saveUser, sendTgMsgByChannelName,
   sendTgMsgByChatId
 } from "./telegramHelper"
+
+dotenv_config()
+const {NEWS_TELEGRAM_CHANNEL} = process.env;
 
 const generateMainMenu = Markup.keyboard([
   [Markup.callbackButton(SUBMIT_OFFER_WORD)],
@@ -233,6 +237,8 @@ export const offerWizard = new WizardScene(
       await ctx.reply(
         `Итак, вы готовы ${actionWord}:\n`
         + `${amount} ${currency} по курсу ${formatRate(rate)} ${currency}-${BYN} в городе ${cityWord}.\n\n`);
+      const channelText = `💰 "Готов ${actionWord} ${amount} ${currency} по курсу ${formatRate(rate)} ${currency}-${BYN} в г. ${cityWord}"`
+      await sendTgMsgByChannelName({name: NEWS_TELEGRAM_CHANNEL, message: channelText}).catch(e => console.log('failed sendTgMsgByChannelName', e))
       return ctx.scene.enter("matching");
     }
     ctx.reply(`Что-то не так, давай начнем с начало`)
