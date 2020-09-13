@@ -105,7 +105,7 @@ export async function listPotentialMatches(userId) {
     const desiredTransactionTypes = _.reduce(myOffers, (acc, offer) => {
       const {currency, action} = offer;
       const transType = getTransType({currency, action: oppositeAction(action)});
-      return acc[transType] ? acc : {...acc, [transType]: transType}
+      return !transType || acc[transType] ? acc : {...acc, [transType]: transType}
     }, {})
     const potentialMatchingOffersPromises = _.map(desiredTransactionTypes, async transType => {
       const {currency, action} = destructTransType(transType)
@@ -114,9 +114,9 @@ export async function listPotentialMatches(userId) {
     })
     const relevantOffersArr = await Promise.all(potentialMatchingOffersPromises);
     const relevantOffersCollection = _.reduce(relevantOffersArr, (acc, currencyOffers) => {
-      return {...acc, ...currencyOffers }
+      const key = Object.keys(currencyOffers)[0];
+      return acc[key] ? {...acc, [key]: {...acc[key], ...currencyOffers[key]}} : {...acc, ...currencyOffers};
     },{})
-
     return {matches: findMatches({relevantOffersCollection, myOffers, userId}), city};
   }
   return {matches: []}
@@ -141,16 +141,16 @@ async function fetchUser(userId) {
   return userSnap.val();
 }
 
-export async function rejectMatch({match, user}) {
-  const {action, city, currency, id} = match;
-  if (!match || !user) throw new Error('no match to save');
+export async function rejectMatch({offer, user}) {
+  const {action, city, currency, id} = offer;
+  if (!offer || !user) throw new Error('no match to save');
   const rejOfferPath = `${user.id}/rejectedOffers/${id}`;
   return usersRef.child(rejOfferPath).set({action, city, currency})
 }
 
-export async function acceptMatch({match, user}) {
-  const {action, city, currency, id} = match;
-  if (!match || !user) throw new Error('no match to save');
+export async function acceptMatch({offer, user}) {
+  const {action, city, currency, id} = offer;
+  if (!offer || !user) throw new Error('no match to save');
   const approvedOfferPath = `${user.id}/acceptedOffers/${id}`;
   return usersRef.child(approvedOfferPath).set({action, city, currency})
 }
