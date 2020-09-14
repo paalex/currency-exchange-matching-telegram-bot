@@ -39,14 +39,14 @@ export const GOMEL = "GOMEL";
 
 export const CITIES_DICT = {
   [MINSK]: {value: MINSK, word: MINSK_WORD},
-  [GRODNO]: {value: GRODNO, word: GRODNO_WORD},
-  [BOBRUYSK]: {value: BOBRUYSK, word: BOBRUYSK_WORD},
   [BARANOVICHI]: {value: BARANOVICHI, word: BARANOVICHI_WORD},
+  [BOBRUYSK]: {value: BOBRUYSK, word: BOBRUYSK_WORD},
+  [GOMEL]: {value: GOMEL, word: GOMEL_WORD},
+  [GRODNO]: {value: GRODNO, word: GRODNO_WORD},
   [ZHODINO]: {value: ZHODINO, word: ZHODINO_WORD},
+  [MOZYR]: {value: MOZYR, word: MOZYR_WORD},
   [ORSHA]: {value: ORSHA, word: ORSHA_WORD},
   [PINSK]: {value: PINSK, word: PINSK_WORD},
-  [MOZYR]: {value: MOZYR, word: MOZYR_WORD},
-  [GOMEL]: {value: GOMEL, word: GOMEL_WORD},
 };
 
 // match approve/reject
