@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import {storeUser} from "./firebaseHelper";
 import {
-  BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, MAIN_MENU, SELL
+  BUY_USD, BUY_EUR, SELL_USD, SELL_EUR, MAIN_MENU, SELL, CITIES_DICT
 } from '../constants/appEnums';
 import {formatRate} from "./currencyHelper"
 import {getCityWord} from "./textHelper"
@@ -19,16 +19,17 @@ function processTelegramUser(user) {
     firstName: user.first_name || '',
     lastName: user.last_name || '',
     username: user.username,
-    langCode: user.language_code || ''
+    langCode: user.language_code || '',
+    lastUsed: user.lastUsed
   };
 }
 
-const getText = (ctx) => _.get(ctx, 'update.message.text')
+export const getText = (ctx) => _.get(ctx, 'update.message.text')
 
-export async function saveUser(user) {
+export async function saveUser({user, lastUsed}) {
   const processedUser = processTelegramUser(user);
   if (!processedUser.isBot && processedUser) {
-    return storeUser(processedUser);
+    return storeUser({...processedUser, lastUsed});
   }
 }
 

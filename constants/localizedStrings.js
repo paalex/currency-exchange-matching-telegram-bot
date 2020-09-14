@@ -2,6 +2,11 @@ export const MINSK_WORD = "Минск";
 export const GRODNO_WORD = "Гродно";
 export const BOBRUYSK_WORD = "Бобруйск";
 export const BARANOVICHI_WORD = "Барановичи";
+export const ZHODINO_WORD = "Жодино";
+export const ORSHA_WORD = "Орша";
+export const PINSK_WORD = "Пинск";
+export const MOZYR_WORD = "Мозырь";
+export const GOMEL_WORD = "Гомель";
 
 export const BUY_USD_WORD = "купить USD";
 export const BUY_EUR_WORD = "купить EUR";

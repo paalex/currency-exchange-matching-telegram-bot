@@ -4,7 +4,6 @@ import _ from 'lodash';
 import {config as dotenv_config} from "dotenv"
 import {storeOffer, listMyOffers, listPotentialMatches, updateCity, rejectMatch, acceptMatch} from "./firebaseHelper";
 import {
-  BUY,
   SELL,
   BYN,
   BUY_USD,
@@ -16,17 +15,10 @@ import {
   USD,
   EUR,
   MINSK,
-  GRODNO,
-  BOBRUYSK,
-  BARANOVICHI,
   MAIN_MENU,
-  MAIN_MENU_OPTIONS
+  MAIN_MENU_OPTIONS, CITIES_DICT, SUGGEST_NEW_CITY
 } from '../constants/appEnums';
 import {
-  MINSK_WORD,
-  GRODNO_WORD,
-  BOBRUYSK_WORD,
-  BARANOVICHI_WORD,
   BUY_USD_WORD,
   BUY_EUR_WORD,
   SELL_USD_WORD,
@@ -39,7 +31,7 @@ import {
 import {destructTransType, fetchNBRBRatesUSD, fetchNBRBRatesEUR, formatRate} from "./currencyHelper"
 import {getCityWord, getActionPhrase} from "./textHelper"
 import {
-  asyncForEach,
+  asyncForEach, getText,
   goHome, isCBQ,
   isNotValidCB, isNotValidNumber,
   readableOffer,
@@ -49,7 +41,7 @@ import {
 } from "./telegramHelper"
 
 dotenv_config()
-const {NEWS_TELEGRAM_CHANNEL} = process.env;
+const {NEWS_TELEGRAM_CHANNEL, ADMIN_GROUP_ID} = process.env;
 
 const generateMainMenu = Markup.keyboard([
   [Markup.callbackButton(SUBMIT_OFFER_WORD)],
@@ -87,39 +79,21 @@ const generateMatchKeyboard = ({match, withBack}) => {
   return Markup.inlineKeyboard(buttons).extra();
 }
 
-const citiesMenu = Markup.inlineKeyboard([
-  [
-    Markup.callbackButton(MINSK_WORD, MINSK),
-    Markup.callbackButton(GRODNO_WORD, GRODNO)
-  ],
-  [
-    Markup.callbackButton(BOBRUYSK_WORD, BOBRUYSK),
-    Markup.callbackButton(BARANOVICHI_WORD, BARANOVICHI),
-  ]
-]).extra();
+const citiesBtnDict = _.chunk(_.map(CITIES_DICT, c => Markup.callbackButton(c.word, c.value)),3)
+const addCityButton = Markup.callbackButton('Добавить мой город', SUGGEST_NEW_CITY)
+const citiesMenu = Markup.inlineKeyboard(citiesBtnDict).extra();
+const citiesWithAddCityMenu = Markup.inlineKeyboard(_.concat(citiesBtnDict,[[addCityButton]])).extra();
 
 const getUser = (ctx) => {
  return _.get(ctx.update, 'callback_query.from') || _.get(ctx.update, 'message.from');
 }
 
-export const welcomeWizard = new WizardScene(
-  "welcome",
-  async ctx => {
-    console.log('welcomeWizard1')
-    const user = getUser(ctx);
-    if (!user.username) {
-      await ctx.reply("В вашем профиле телеграма не хватает имени пользователя. Имя пользователя можно легко " +
-        "добавить в 'Настройки' => 'Имя пользователя'. Без имени пользователя я не смогу соединить вас с другими пользователями чтобы осуществить обмены")
-    } else {
-      await saveUser(user).catch(e => console.log('err saving user', e));
-      await ctx.reply("Что будем делать? 🐰", generateMainMenu);
-    }
-    return ctx.scene.leave()
-  })
+const getTimestamp = (ctx) => {
+ return _.get(ctx.update, 'callback_query.message.date') || _.get(ctx.update, 'message.date') || 0;
+}
 
 export const mainMenuMiddleware = async (ctx, next) => {
   const choice = _.get(ctx.update, 'message.text')
-  console.log('mainMenuMiddleware')
   if (_.some(_.map(MAIN_MENU_OPTIONS), m => m === choice)) {
     // is menu click
     const userId = _.get(getUser(ctx),'id');
@@ -162,6 +136,22 @@ export const mainMenuMiddleware = async (ctx, next) => {
   }
   return next()
 }
+
+export const welcomeWizard = new WizardScene(
+  "welcome",
+  async ctx => {
+    console.log('welcomeWizard1')
+    const user = getUser(ctx);
+    if (!user.username) {
+      await ctx.reply("В вашем профиле телеграма не хватает имени пользователя. Имя пользователя можно легко " +
+        "добавить в 'Настройки' => 'Имя пользователя'. Без имени пользователя я не смогу соединить вас с другими пользователями чтобы осуществить обмены")
+    } else {
+      const timestamp = getTimestamp(ctx);
+      await saveUser({user, lastUsed: timestamp}).catch(e => console.log('err saving user', e));
+      await ctx.reply("Что будем делать? 🐰", generateMainMenu);
+    }
+    return ctx.scene.leave()
+  })
 
 export const offerWizard = new WizardScene(
   'offer',
@@ -231,7 +221,8 @@ export const offerWizard = new WizardScene(
     const cityWord = getCityWord(city);
     const invalid = !amount || !currency || !rate || !cityWord;
     if (!invalid) {
-      storeOffer(user, offer).catch(e => console.warn('err in storeOffer', e))
+      const timestamp = getTimestamp(ctx);
+      storeOffer({user, offer, createdAt: timestamp}).catch(e => console.warn('err in storeOffer', e))
       const partnerWord = action === SELL ? 'покупателя' : 'продавца';
       const actionWord = action === SELL ? 'продать' : 'купить';
       await ctx.reply(
@@ -298,6 +289,7 @@ export const matchingWizard = new WizardScene(
     const {offer, myOffer} = match; // his offer
     const {city, rate, userId, username, amount, currency} = offer; // his offer
     const user = getUser(ctx);
+    const timestamp = getTimestamp(ctx);
     if (selection === APPROVE_MATCH) {
       const warning = `⚠️ За скупку, продажу или обмен валюты без лицензии или госрегистрации предусмотрена административная ответственность️`;
       const advice = `💡Законный способ через обменный пункт: продавец валюты сдает ее в кассу, а покупатель приобретает сразу после него`;
@@ -307,14 +299,14 @@ export const matchingWizard = new WizardScene(
       const text2 = `🎉 Я нашел для вас сделку:\n` + readableOffer(myOffer)
         + `\n Контакт: @${_.get(user, 'username')} \n\n${warning} \n\n ${advice}`
       await ctx.editMessageText('👍🏻', emptyInlineKeyboard);
-      acceptMatch({offer, user}).catch(e => console.log('failed acceptMatch', match ,e))
+      acceptMatch({offer, user, timestamp}).catch(e => console.log('failed acceptMatch', match ,e))
       sendTgMsgByChatId({chatId: userId, message: text2}).catch(e => console.log('failed sendTgMsgByChatId', e))
       const cityWord = getCityWord(city);
       const channelText = `💰 "Новая сделка! ${amount} ${currency} по курсу ${formatRate(rate)} ${currency}-${BYN} в г. ${cityWord}"`
       sendTgMsgByChannelName({name: NEWS_TELEGRAM_CHANNEL, message: channelText}).catch(e => console.log('failed sendTgMsgByChannelName', e))
-    } else {
+    } else if (selection === REJECT_MATCH) {
       await ctx.editMessageText('➡️🗑', emptyInlineKeyboard);
-      await rejectMatch({offer, user}).catch(e => console.log('err rejecting a match', e))
+      rejectMatch({offer, user, timestamp}).catch(e => console.log('err rejecting a match', e))
     }
   },
   ctx => {
@@ -329,7 +321,7 @@ export const chooseCityWizard = new WizardScene(
     console.log('chooseCityWizard1')
     // console.log('ctx',ctx)
     ctx.reply(`В каком городе вы можете встретится?`,
-      citiesMenu
+      citiesWithAddCityMenu
     );
     return ctx.wizard.next();
   },
@@ -337,12 +329,35 @@ export const chooseCityWizard = new WizardScene(
     console.log('chooseCityWizard2')
     if (isNotValidCB(ctx)) return goHome(ctx);
     const city = _.get(ctx.update, 'callback_query.data');
-    const userId = _.get(getUser(ctx),'id');
-    await updateCity({city, userId})
-    await ctx.reply(`Ок, ${getCityWord(city)} 🏡`, backToMainMenuKeyboard)
+    if (city === SUGGEST_NEW_CITY) {
+      ctx.wizard.state.SUGGEST_NEW_CITY = true;
+      await ctx.reply(`Как называется ваш город? 🏘`)
+    } else {
+      const userId = _.get(getUser(ctx), 'id');
+      await updateCity({city, userId})
+      await ctx.reply(`Ок, ${getCityWord(city)} 🏡`, backToMainMenuKeyboard)
+    }
     return ctx.wizard.next();
   },
-  ctx => {
+  async ctx => {
+    const city = getText(ctx);
+    console.log('shouldAddNewCity',ctx)
+    console.log('city',city)
+    const shouldAddNewCity = _.get(ctx.wizard, `state.${SUGGEST_NEW_CITY}`);
+    console.log('shouldAddNewCity',ctx.wizard.state)
+
+    if (shouldAddNewCity) {
+      if (city) {
+        await ctx.reply(`Я попытаюсь зарегистрировать ваш город. Это обычно занимает несколько часов ⏳`)
+        sendTgMsgByChatId({
+          chatId: ADMIN_GROUP_ID,
+          message: `Please add the following new city: ${city}`
+        }).catch(e => console.log(`err submitting new city - ${city}`, e))
+      } else {
+        await ctx.reply(`Что-то не так, давай попробуем опять`)
+        return ctx.scene.enter('choose_city')
+      }
+    }
     console.log('chooseCityWizard3')
     goHome(ctx)
   }

@@ -39,7 +39,7 @@ export async function storeUser(user) {
   return userRef.update(user);
 }
 
-export async function storeOffer(user, offer) {
+export async function storeOffer({user, offer, createdAt}) {
   const {action, city, currency} = offer;
   const {id: userId, username} = user;
   if (!user) throw new Error('no offer to save');
@@ -48,19 +48,10 @@ export async function storeOffer(user, offer) {
   const offerUid = db.child(offerPath).push().key;
   const userOfferPath = `${userOffersPath}/${offerUid}`;
   const offerPathWithUid = `${offerPath}/${offerUid}`;
-  return new Promise((res, rej) => {
-    db.update({
-      [offerPathWithUid]: {...offer, id: offerUid, userId, username},
+  return db.update({
+      [offerPathWithUid]: {...offer, id: offerUid, userId, username, createdAt},
       [userOfferPath]: {city, action, currency}
-    },function(error) {
-      if (error) {
-        console.log("User could not be saved." + error);
-        rej(error)
-      } else {
-        console.log("User saved successfully.");
-      }
-    });
-  })
+    })
 }
 
 export async function updateCity({city, userId}) {
@@ -141,16 +132,16 @@ async function fetchUser(userId) {
   return userSnap.val();
 }
 
-export async function rejectMatch({offer, user}) {
+export async function rejectMatch({offer, user, timestamp}) {
   const {action, city, currency, id} = offer;
   if (!offer || !user) throw new Error('no match to save');
   const rejOfferPath = `${user.id}/rejectedOffers/${id}`;
-  return usersRef.child(rejOfferPath).set({action, city, currency})
+  return usersRef.child(rejOfferPath).set({action, city, currency, timestamp})
 }
 
-export async function acceptMatch({offer, user}) {
+export async function acceptMatch({offer, user, timestamp}) {
   const {action, city, currency, id} = offer;
   if (!offer || !user) throw new Error('no match to save');
   const approvedOfferPath = `${user.id}/acceptedOffers/${id}`;
-  return usersRef.child(approvedOfferPath).set({action, city, currency})
+  return usersRef.child(approvedOfferPath).set({action, city, currency, timestamp})
 }
