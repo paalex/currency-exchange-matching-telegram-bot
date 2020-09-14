@@ -334,7 +334,14 @@ export const chooseCityWizard = new WizardScene(
   },
   async ctx => {
     console.log('chooseCityWizard2')
-    if (isNotValidCB(ctx)) return goHome(ctx);
+    if (isNotValidCB(ctx)) {
+      if (isValidText(ctx)) {
+        const city = getText(ctx);
+        await ctx.reply(`Я попытаюсь зарегистрировать ваш город. Это обычно занимает несколько часов ⏳`)
+        await addNewCity(city)
+      }
+      return goHome(ctx);
+    }
     const city = _.get(ctx.update, 'callback_query.data');
     if (city === SUGGEST_NEW_CITY) {
       ctx.wizard.state.SUGGEST_NEW_CITY = true;
@@ -348,15 +355,11 @@ export const chooseCityWizard = new WizardScene(
   },
   async ctx => {
     const city = getText(ctx);
-    console.log('shouldAddNewCity',ctx)
-    console.log('city',city)
     const shouldAddNewCity = _.get(ctx.wizard, `state.${SUGGEST_NEW_CITY}`);
-    console.log('shouldAddNewCity',ctx.wizard.state)
-
     if (shouldAddNewCity) {
       if (city) {
         await ctx.reply(`Я не узнаю город. Я попытаюсь зарегистрировать ваш город. Это обычно занимает несколько часов ⏳`)
-        await addNewCity({ctx, city})
+        await addNewCity(city)
       } else {
         await ctx.reply(`Что-то не так, давай попробуем опять`)
         return ctx.scene.enter('choose_city')
