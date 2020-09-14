@@ -76,4 +76,9 @@ export const isNotValidNumber = ctx => {
   return !txt || isNaN(txt);
 }
 
+export const isValidText = ctx => {
+  const txt = getText(ctx);
+  return typeof txt === 'string' && txt.charAt(0) !== '/';
+}
+
 export const isCBQ = (ctx) => !!_.get(ctx.update, 'callback_query')

@@ -33,7 +33,7 @@ import {getCityWord, getActionPhrase} from "./textHelper"
 import {
   asyncForEach, getText,
   goHome, isCBQ,
-  isNotValidCB, isNotValidNumber,
+  isNotValidCB, isNotValidNumber, isValidText,
   readableOffer,
   readableOffers,
   saveUser, sendTgMsgByChannelName,
@@ -212,7 +212,14 @@ export const offerWizard = new WizardScene(
   },
   async ctx => {
     console.log('offerWizard5')
-    if (isNotValidCB(ctx)) return goHome(ctx);
+    if (isNotValidCB(ctx)) {
+      if (isValidText(ctx)) {
+        const city = getText(ctx);
+        await ctx.reply(`Я попытаюсь зарегистрировать ваш город. Это обычно занимает несколько часов ⏳`)
+        await addNewCity(city)
+      }
+      return goHome(ctx);
+    }
     ctx.wizard.state.city = ctx.update.callback_query.data;
     const {currency, rate, amount, action, city} = ctx.wizard.state;
     updateCity({city, userId: getUser(ctx).id}).catch(e => console.log('error setting city', e));
@@ -348,11 +355,8 @@ export const chooseCityWizard = new WizardScene(
 
     if (shouldAddNewCity) {
       if (city) {
-        await ctx.reply(`Я попытаюсь зарегистрировать ваш город. Это обычно занимает несколько часов ⏳`)
-        sendTgMsgByChatId({
-          chatId: ADMIN_GROUP_ID,
-          message: `Please add the following new city: ${city}`
-        }).catch(e => console.log(`err submitting new city - ${city}`, e))
+        await ctx.reply(`Я не узнаю город. Я попытаюсь зарегистрировать ваш город. Это обычно занимает несколько часов ⏳`)
+        await addNewCity({ctx, city})
       } else {
         await ctx.reply(`Что-то не так, давай попробуем опять`)
         return ctx.scene.enter('choose_city')
@@ -363,4 +367,9 @@ export const chooseCityWizard = new WizardScene(
   }
 )
 
-
+const addNewCity = async city => {
+  sendTgMsgByChatId({
+    chatId: ADMIN_GROUP_ID,
+    message: `Please add the following new city: ${city}`
+  }).catch(e => console.log(`err submitting new city - ${city}`, e))
+}
