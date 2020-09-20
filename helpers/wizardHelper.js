@@ -26,7 +26,7 @@ import {
   GET_NBRB_EUR_WORD,
   GET_NBRB_USD_WORD,
   CHOOSE_CITY_WORD,
-  LIST_POTENTIAL_MATCHES_WORD, LIST_OFFERS_WORD, SUBMIT_OFFER_WORD
+  LIST_POTENTIAL_MATCHES_WORD, LIST_OFFERS_WORD, SUBMIT_OFFER_WORD, FEEDBACK_WORD
 } from '../constants/localizedStrings'
 import {destructTransType, fetchNBRBRatesUSD, fetchNBRBRatesEUR, formatRate} from "./currencyHelper"
 import {getCityWord, getActionPhrase} from "./textHelper"
@@ -41,7 +41,7 @@ import {
 } from "./telegramHelper"
 
 dotenv_config()
-const {NEWS_TELEGRAM_CHANNEL, ADMIN_GROUP_ID} = process.env;
+const {NEWS_TELEGRAM_CHANNEL, ADMIN_GROUP_ID, TECH_SUPPORT_TELEGRAM_GROUP} = process.env;
 
 const generateMainMenu = Markup.keyboard([
   [Markup.callbackButton(SUBMIT_OFFER_WORD)],
@@ -51,7 +51,8 @@ const generateMainMenu = Markup.keyboard([
   [
     Markup.callbackButton(GET_NBRB_USD_WORD),
     Markup.callbackButton(GET_NBRB_EUR_WORD)
-  ]
+  ],
+  [Markup.callbackButton(FEEDBACK_WORD)]
 ]).oneTime().extra();
 const backToMainMenuButton = Markup.callbackButton("Открыть меню ⬆️️", MAIN_MENU)
 const backToMainMenuKeyboard = Markup.inlineKeyboard([backToMainMenuButton]).extra()
@@ -114,6 +115,9 @@ export const mainMenuMiddleware = async (ctx, next) => {
         return ctx.scene.enter('offer')
       case CHOOSE_CITY_WORD:
         return ctx.scene.enter('choose_city')
+      case FEEDBACK_WORD:
+        await ctx.reply(`Обратная связь - ${TECH_SUPPORT_TELEGRAM_GROUP}`, backToMainMenuKeyboard)
+        return ctx.scene.leave()
       case GET_NBRB_USD_WORD: // fall through.  same as ||
       case GET_NBRB_EUR_WORD:
         const currency = choice === GET_NBRB_USD_WORD ? USD : EUR;

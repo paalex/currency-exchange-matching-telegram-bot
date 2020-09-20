@@ -22,3 +22,4 @@ export const LIST_POTENTIAL_MATCHES_WORD = `🔍 Подобрать сделки
 export const CHOOSE_CITY_WORD = `📍 Выбрать / Изменить город`;
 export const GET_NBRB_USD_WORD = `Курс НБРБ USD 🇺🇸`;
 export const GET_NBRB_EUR_WORD = `Курс НБРБ EUR 🇪🇺`;
+export const FEEDBACK_WORD = `Обратная связь`;
