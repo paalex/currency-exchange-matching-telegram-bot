@@ -3,5 +3,5 @@
 .env
 
 node_modules
-
+./public
 fb-service-account.json

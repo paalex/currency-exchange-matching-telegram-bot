@@ -17,21 +17,6 @@ var db = admin.database().ref('server');
 
 var usersRef = db.child("users");
 var offersRef = db.child("offers");
-// var offersRef = db.child("offers");
-
-// usersRef.set({paalex: {name: 'Alex', telegramId: '@paalex505'}}, function(error) {
-//   if (error) {
-//     console.log("Data could not be saved." + error);
-//   } else {
-//     console.log("Data saved successfully.");
-//   }
-// });
-// usersRef.update({paalex: {name: 'Alex', telegramId: '@paalex505'}}}
-// atomic update
-// usersRef.update({
-//   "alanisawesome/nickname": "Alan The Machine",
-//   "gracehop/nickname": "Amazing Grace"
-// });
 
 export async function storeUser(user) {
   if (!user) throw new Error('no user to save');
